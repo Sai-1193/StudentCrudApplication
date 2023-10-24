@@ -1,0 +1,173 @@
+package main
+
+import (
+	"encoding/json" // Import the JSON encoding package.
+	"fmt"          // Import the package for formatted I/O.
+	"log"          // Import the logging package.
+	"net/http"     // Import the package for HTTP operations.
+
+	"github.com/go-resty/resty/v2" // Import the Go-Resty library for making HTTP requests.
+)
+
+// Define a struct to represent the Postman collection.
+type PostmanCollection struct {
+	Info struct {
+		Name string `json:"name"`
+	} `json:"info"`
+	Items []struct {
+		Name    string `json:"name"`
+		Request struct {
+			Method string `json:"method"`
+			URL    struct {
+				Raw string `json:"raw"`
+			} `json:"url"`
+			Header []struct {
+				Key   string `json:"key"`
+				Value string `json:"value"`
+			} `json:"header"`
+			Body struct {
+				Mode string `json:"mode"`
+				Raw  string `json:"raw"`
+			} `json:"body"`
+		} `json:"request"`
+	} `json:"item"`
+}
+
+func main() {
+	// Define the Postman collection URL.
+	postmanCollectionURL := "https://raw.githubusercontent.com/heremaps/postman-collections/master/places.postman_collection"
+
+	// Fetch the Postman collection JSON from the URL.
+	resp, err := http.Get(postmanCollectionURL)
+	if err != nil {
+		log.Fatalf("Error fetching Postman collection JSON: %v", err)
+	}
+
+	defer resp.Body.Close() // Defer closing the response body to ensure proper cleanup.
+
+	// Decode the JSON response into a PostmanCollection struct.
+	var collection PostmanCollection
+	err = json.NewDecoder(resp.Body).Decode(&collection)
+	if err != nil {
+		log.Fatalf("Error decoding JSON: %v", err)
+	}
+
+	// Iterate through the collection and make requests.
+	for _, item := range collection.Items {
+		switch item.Request.Method {
+		case "GET":
+			makeGETRequest(item)
+		case "POST":
+			makePOSTRequest(item)
+		case "PUT":
+			makePUTRequest(item)
+		}
+	}
+}
+
+func makeGETRequest(item struct {
+	Name    string `json:"name"`
+	Request struct {
+		URL    struct {
+			Raw string `json:"raw"`
+		} `json:"url"`
+		Header []struct {
+			Key   string `json:"key"`
+			Value string `json:"value"`
+		} `json:"header"`
+	} `json:"request"`
+}) {
+	// Make the GET request using Go-Resty.
+	resp, err := resty.New().
+		R().
+		SetHeaders(requestHeaders(item.Request.Header)). // Set request headers.
+		Get(item.Request.URL.Raw)                        // Perform the GET request.
+
+	if err != nil {
+		log.Fatalf("Error making GET request for %s: %v", item.Name, err)
+		return
+	}
+
+	// Handle the GET request response.
+	fmt.Printf("GET Request Name: %s\n", item.Name)
+	fmt.Printf("Response Status Code: %d\n", resp.StatusCode())
+	// Process the response body as needed.
+}
+
+func makePOSTRequest(item struct {
+	Name    string `json:"name"`
+	Request struct {
+		URL    struct {
+			Raw string `json:"raw"`
+		} `json:"url"`
+		Header []struct {
+			Key   string `json:"key"`
+			Value string `json:"value"`
+		} `json:"header"`
+		Body struct {
+			Mode string `json:"mode"`
+			Raw  string `json:"raw"`
+		} `json:"body"`
+	}) {
+	// Make the POST request using Go-Resty.
+	resp, err := resty.New().
+		R().
+		SetHeaders(requestHeaders(item.Request.Header)). // Set request headers.
+		SetBody(item.Request.Body.Raw).                  // Set request body.
+		Post(item.Request.URL.Raw)                       // Perform the POST request.
+
+	if err != nil {
+		log.Fatalf("Error making POST request for %s: %v", item.Name, err)
+		return
+	}
+
+	// Handle the POST request response.
+	fmt.Printf("POST Request Name: %s\n", item.Name)
+	fmt.Printf("Response Status Code: %d\n", resp.StatusCode())
+	// Process the response body as needed.
+}
+
+func makePUTRequest(item struct {
+	Name    string `json:"name"`
+	Request struct {
+		URL    struct {
+			Raw string `json:"raw"`
+		} `json:"url"`
+		Header []struct {
+			Key   string `json:"key"`
+			Value string `json:"value"`
+		} `json:"header"`
+		Body struct {
+			Mode string `json:"mode"`
+			Raw  string `json:"raw"`
+		} `json:"body"`
+	}) {
+	// Make the PUT request using Go-Resty.
+	resp, err := resty.New().
+		R().
+		SetHeaders(requestHeaders(item.Request.Header)). // Set request headers.
+		SetBody(item.Request.Body.Raw).                  // Set request body.
+		Put(item.Request.URL.Raw)                        // Perform the PUT request.
+
+	if err != nil {
+		log.Fatalf("Error making PUT request for %s: %v", item.Name, err)
+		return
+	}
+
+	// Handle the PUT request response.
+	fmt.Printf("PUT Request Name: %s\n", item.Name)
+	fmt.Printf("Response Status Code: %d\n", resp.StatusCode())
+	// Process the response body as needed.
+}
+
+func requestHeaders(headers []struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}) map[string]string {
+	// Convert request headers from the Postman item to a map that Go-Resty can use.
+	headerMap := make(map[string]string)
+	for _, header := range headers {
+		headerMap[header.Key] = header.Value
+	}
+	return headerMap
+}
