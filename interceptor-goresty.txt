@@ -1,0 +1,138 @@
+func customInterceptor(req *resty.Request, resp *resty.Response) error {
+    // Before Request
+    fmt.Println("Before Request")
+    req.SetHeader("Authorization", "Bearer YourAccessToken")
+
+    // After Request
+    fmt.Println("After Request")
+    fmt.Println("Response Status Code:", resp.StatusCode())
+    return nil
+}
+
+func main() {
+    client := resty.New()
+
+    // Set the interceptor for all requests
+    client.OnBeforeRequest(customInterceptor)
+    client.OnAfterResponse(customInterceptor)
+
+    // Make a GET request
+    response, err := client.R().Get("https://api.example.com/get-endpoint")
+    if err != nil {
+        fmt.Println("GET Request Error:", err)
+    }
+    fmt.Println("GET Response Body:", response.String())
+
+    // Make a POST request
+    response, err = client.R().
+        SetHeader("Content-Type", "application/json").
+        SetBody([]byte(`{"key": "value"}`)).
+        Post("https://api.example.com/post-endpoint")
+    if err != nil {
+        fmt.Println("POST Request Error:", err)
+    }
+    fmt.Println("POST Response Body:", response.String())
+}
+
+
+
+func loggingInterceptor(req *resty.Request, resp *resty.Response) error {
+    // Before Request
+    fmt.Printf("Request URL: %s\n", req.URL)
+    fmt.Printf("Request Method: %s\n", req.Method)
+
+    // After Request
+    fmt.Printf("Response Status Code: %d\n", resp.StatusCode())
+    fmt.Printf("Response Body: %s\n", resp.String())
+
+    return nil
+}
+
+func retryInterceptor(req *resty.Request, resp *resty.Response) error {
+    // After Request
+    if resp.StatusCode() >= 500 {
+        // Retry the request after a certain delay.
+        return fmt.Errorf("Request failed with status code: %d", resp.StatusCode())
+    }
+    return nil
+}
+func errorHandlingInterceptor(req *resty.Request, resp *resty.Response) error {
+    // After Request
+    if resp.IsError() {
+        fmt.Printf("Request failed with status code: %d\n", resp.StatusCode())
+        // Handle the error accordingly
+    }
+    return nil
+}
+func requestTimeoutInterceptor(req *resty.Request, resp *resty.Response) error {
+    // Before Request
+    req.SetTimeout(5 * time.Second) // Set a timeout of 5 seconds for the request
+    return nil
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Log request details
+        fmt.Printf("Request URL: %s\n", r.URL)
+        fmt.Printf("Request Method: %s\n", r.Method)
+
+        // Call the next handler in the chain
+        next.ServeHTTP(w, r)
+    })
+}
+
+func authenticationMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Implement authentication logic here
+        // Example: Check for a valid access token in the request headers
+        accessToken := r.Header.Get("Authorization")
+        if accessToken != "Bearer YourAccessToken" {
+            http.Error(w, "Unauthorized", http.StatusUnauthorized)
+            return
+        }
+
+        // Call the next handler in the chain
+        next.ServeHTTP(w, r)
+    })
+}
+
+func main() {
+    // Create a RESTy client
+    client := resty.New()
+
+    // Create an HTTP server
+    server := http.NewServeMux()
+
+    // Apply middleware to your HTTP server
+    server.Handle("/get-endpoint", authenticationMiddleware(loggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Handle your GET request here
+        response, err := client.R().Get("https://api.example.com/get-endpoint")
+        if err != nil {
+            http.Error(w, "GET Request Error", http.StatusInternalServerError)
+            return
+        }
+
+        // Send the response back to the client
+        w.WriteHeader(response.StatusCode())
+        w.Write([]byte(response.String()))
+    }))))
+
+    server.Handle("/post-endpoint", authenticationMiddleware(loggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Handle your POST request here
+        response, err := client.R().
+            SetHeader("Content-Type", "application/json").
+            SetBody([]byte(`{"key": "value"}`)).
+            Post("https://api.example.com/post-endpoint")
+        if err != nil {
+            http.Error(w, "POST Request Error", http.StatusInternalServerError)
+            return
+        }
+
+        // Send the response back to the client
+        w.WriteHeader(response.StatusCode())
+        w.Write([]byte(response.String()))
+    }))))
+
+    // Start the HTTP server
+    http.ListenAndServe(":8080", server)
+}
