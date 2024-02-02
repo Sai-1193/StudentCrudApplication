@@ -1,0 +1,192 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"html/template"
+	"os"
+	"strings"
+
+	"github.com/go-resty/resty/v2"
+)
+
+// PostmanItem represents an item in the Postman Collection
+type PostmanItem struct {
+	Name    string `json:"name"`
+	Request struct {
+		Method string `json:"method"`
+		URL    struct {
+			Raw      string   `json:"raw"`
+			Protocol string   `json:"protocol"`
+			Host     []string `json:"host"`
+			Path     []string `json:"path"`
+		} `json:"url"`
+		// Add other request details as needed
+	} `json:"request"`
+	// Add other item details as needed
+}
+
+// PostmanCollection represents a Postman Collection
+type PostmanCollection struct {
+	Info struct {
+		Name string `json:"name"`
+		// Add other collection info as needed
+	} `json:"info"`
+	Item []PostmanItem `json:"item"`
+}
+
+// HTTPClient is a wrapper around go-resty's RestClient
+type HTTPClient struct {
+	client *resty.Client
+}
+
+// NewHTTPClient creates a new HTTPClient instance
+func NewHTTPClient() *HTTPClient {
+	return &HTTPClient{
+		client: resty.New(),
+	}
+}
+
+// RequestResult holds the result of an HTTP request
+type RequestResult struct {
+	Name         string
+	Method       string
+	URL          string
+	StatusCode   int
+	ResponseBody string
+	Error        error
+}
+
+// ExecuteRequests performs requests for each item in the collection
+func ExecuteRequests(collection *PostmanCollection, httpClient *HTTPClient) []RequestResult {
+	var results []RequestResult
+
+	for _, item := range collection.Item {
+		fmt.Printf("Performing request for item: %s\n", item.Name)
+		url := item.Request.URL.Raw
+		method := item.Request.Method
+
+		statusCode, responseBody, err := httpClient.PerformRequest(method, url)
+		result := RequestResult{
+			Name:         item.Name,
+			Method:       method,
+			URL:          url,
+			StatusCode:   statusCode,
+			ResponseBody: responseBody,
+			Error:        err,
+		}
+
+		results = append(results, result)
+	}
+
+	return results
+}
+
+// WriteResponsesToHTML writes the responses and status codes to an HTML file using text/template
+func WriteResponsesToHTML(collectionName string, results []RequestResult) {
+	file, err := os.Create("output.html")
+	if err != nil {
+		fmt.Println("Error creating output.html:", err)
+		return
+	}
+	defer file.Close()
+
+	tmpl := `
+{{.CollectionName}}
+=================
+
+<table>
+	<tr>
+		<th>Request Name</th>
+		<th>Request Method</th>
+		<th>URL</th>
+		<th>Status Code</th>
+		<th>Response Body</th>
+		<th>Error</th>
+	</tr>
+	{{range .Results}}
+	<tr>
+		<td>{{.Name}}</td>
+		<td>{{.Method}}</td>
+		<td>{{.URL}}</td>
+		<td>{{.StatusCode}}</td>
+		<td>{{.ResponseBody}}</td>
+		<td>{{.Error}}</td>
+	</tr>
+	{{end}}
+</table>
+`
+
+	tmplData := struct {
+		CollectionName string
+		Results        []RequestResult
+	}{
+		CollectionName: collectionName,
+		Results:        results,
+	}
+
+	tmplObj := template.Must(template.New("text").Parse(tmpl))
+	if err := tmplObj.Execute(file, tmplData); err != nil {
+		fmt.Println("Error writing to output.html:", err)
+		return
+	}
+
+	fmt.Println("Responses written to output.html")
+}
+
+func main() {
+	// Replace this with your actual Postman Collection JSON
+	postmanCollectionJSON := `
+		{
+			"info": {
+				"name": "Sample Collection"
+				// ... other fields
+			},
+			"item": [
+				{
+					"name": "Get Request 1",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "https://jsonplaceholder.typicode.com/posts/1",
+							"protocol": "https",
+							"host": ["jsonplaceholder", "typicode", "com"],
+							"path": ["posts", "1"]
+						}
+						// ... other request details
+					}
+				},
+				{
+					"name": "Get Request 2",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "https://jsonplaceholder.typicode.com/posts/2",
+							"protocol": "https",
+							"host": ["jsonplaceholder", "typicode", "com"],
+							"path": ["posts", "2"]
+						}
+						// ... other request details
+					}
+				},
+				// ... other requests
+			]
+		}
+	`
+
+	// Parse JSON into PostmanCollection struct
+	collection, err := ParsePostmanCollection(postmanCollectionJSON)
+	if err != nil {
+		fmt.Println("Error parsing Postman Collection JSON:", err)
+		return
+	}
+
+	// Create HTTP client
+	httpClient := NewHTTPClient()
+
+	// Execute requests
+	results := ExecuteRequests(collection, httpClient)
+
+	// Write responses and status codes to HTML using text/template
+	WriteResponsesToHTML(collection.Info.Name, results)
+}
