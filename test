@@ -69,3 +69,50 @@ var _ = Describe("My API Tests", func() {
         Expect(resp.StatusCode()).To(Equal(200))
     })
 })
+
+
+
+
+package myapi_test
+
+import (
+    . "github.com/onsi/ginkgo"
+    . "github.com/onsi/gomega"
+    "github.com/go-resty/resty/v2"
+    "sync"
+    "path/to/your/postman/package"
+)
+
+var _ = Describe("My API Tests", func() {
+    var (
+        client *resty.Client
+    )
+
+    BeforeEach(func() {
+        // Setup client before each test
+        client = resty.New()
+    })
+
+    AfterEach(func() {
+        // Cleanup after each test if needed
+    })
+
+    It("should make GET request", func() {
+        // Mock necessary parameters
+        var wg sync.WaitGroup
+        item := &postman.CollectionItem{
+            // Define your item properties here
+        }
+        variable := &postman.CollectionVariable{
+            // Define your variable properties here
+        }
+
+        // Call the method under test
+        err := makeGetRequest(&wg, item, variable, client)
+        
+        // Assert expectations
+        Expect(err).NotTo(HaveOccurred())
+        // Add more assertions if needed
+    })
+})
+
