@@ -1,0 +1,71 @@
+package myapi_test
+
+import (
+    . "github.com/onsi/ginkgo"
+    . "github.com/onsi/gomega"
+    "github.com/go-resty/resty/v2"
+    "encoding/json"
+    "os"
+)
+
+var _ = Describe("My API Tests", func() {
+    var (
+        client *resty.Client
+    )
+
+    BeforeEach(func() {
+        // Setup client before each test
+        client = resty.New()
+    })
+
+    AfterEach(func() {
+        // Cleanup after each test if needed
+    })
+
+    It("should make GET request", func() {
+        // Make GET request
+        resp, err := client.R().Get("http://example.com/api/resource")
+        Expect(err).NotTo(HaveOccurred())
+        Expect(resp.StatusCode()).To(Equal(200))
+    })
+
+    It("should make POST request", func() {
+        // Load test data from JSON file
+        file, err := os.Open("testdata/post_data.json")
+        Expect(err).NotTo(HaveOccurred())
+        defer file.Close()
+
+        // Parse JSON data
+        var postData map[string]interface{}
+        err = json.NewDecoder(file).Decode(&postData)
+        Expect(err).NotTo(HaveOccurred())
+
+        // Make POST request with JSON data
+        resp, err := client.R().
+            SetHeader("Content-Type", "application/json").
+            SetBody(postData).
+            Post("http://example.com/api/resource")
+        Expect(err).NotTo(HaveOccurred())
+        Expect(resp.StatusCode()).To(Equal(201))
+    })
+
+    It("should make PUT request", func() {
+        // Load test data from JSON file
+        file, err := os.Open("testdata/put_data.json")
+        Expect(err).NotTo(HaveOccurred())
+        defer file.Close()
+
+        // Parse JSON data
+        var putData map[string]interface{}
+        err = json.NewDecoder(file).Decode(&putData)
+        Expect(err).NotTo(HaveOccurred())
+
+        // Make PUT request with JSON data
+        resp, err := client.R().
+            SetHeader("Content-Type", "application/json").
+            SetBody(putData).
+            Put("http://example.com/api/resource/123")
+        Expect(err).NotTo(HaveOccurred())
+        Expect(resp.StatusCode()).To(Equal(200))
+    })
+})
