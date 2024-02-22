@@ -1,0 +1,178 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+)
+
+// RequestDetails represents details for making HTTP requests
+type RequestDetails struct {
+	Method      string
+	URL         string
+	Body        interface{}
+	Headers     map[string]string
+	Auth        *AuthDetails
+}
+
+// AuthDetails represents authentication details
+type AuthDetails struct {
+	Type   string
+	Params map[string]string
+}
+
+// SendGETRequest sends a GET request
+func SendGETRequest(url string, headers map[string]string, auth *AuthDetails) ([]byte, error) {
+	return sendRequest(RequestDetails{
+		Method:  "GET",
+		URL:     url,
+		Headers: headers,
+		Auth:    auth,
+	})
+}
+
+// SendPOSTRequest sends a POST request
+func SendPOSTRequest(url string, body interface{}, headers map[string]string, auth *AuthDetails) ([]byte, error) {
+	return sendRequest(RequestDetails{
+		Method:  "POST",
+		URL:     url,
+		Body:    body,
+		Headers: headers,
+		Auth:    auth,
+	})
+}
+
+// SendPUTRequest sends a PUT request
+func SendPUTRequest(url string, body interface{}, headers map[string]string, auth *AuthDetails) ([]byte, error) {
+	return sendRequest(RequestDetails{
+		Method:  "PUT",
+		URL:     url,
+		Body:    body,
+		Headers: headers,
+		Auth:    auth,
+	})
+}
+
+// SendDELETERequest sends a DELETE request
+func SendDELETERequest(url string, headers map[string]string, auth *AuthDetails) ([]byte, error) {
+	return sendRequest(RequestDetails{
+		Method:  "DELETE",
+		URL:     url,
+		Headers: headers,
+		Auth:    auth,
+	})
+}
+
+func sendRequest(reqDetails RequestDetails) ([]byte, error) {
+	client := &http.Client{}
+
+	// Prepare request body
+	var requestBody []byte
+	if reqDetails.Body != nil {
+		var err error
+		requestBody, err = json.Marshal(reqDetails.Body)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Create HTTP request
+	request, err := http.NewRequest(reqDetails.Method, reqDetails.URL, bytes.NewBuffer(requestBody))
+	if err != nil {
+		return nil, err
+	}
+
+	// Set headers
+	for key, value := range reqDetails.Headers {
+		request.Header.Set(key, value)
+	}
+
+	// Set authentication
+	if reqDetails.Auth != nil {
+		if reqDetails.Auth.Type == "basic" && len(reqDetails.Auth.Params) == 2 {
+			request.SetBasicAuth(reqDetails.Auth.Params["username"], reqDetails.Auth.Params["password"])
+		}
+	}
+
+	// Execute request
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	// Read response body
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return responseBody, nil
+}
+
+func main() {
+	// Example usage
+	getURL := "https://api.example.com/resource"
+	getHeaders := map[string]string{
+		"Authorization": "Bearer <token>",
+	}
+
+	postURL := "https://api.example.com/resource"
+	postBody := map[string]interface{}{
+		"key": "value",
+	}
+	postHeaders := map[string]string{
+		"Content-Type": "application/json",
+	}
+
+	putURL := "https://api.example.com/resource/123"
+	putBody := map[string]interface{}{
+		"key": "updated_value",
+	}
+	putHeaders := map[string]string{
+		"Content-Type": "application/json",
+	}
+
+	deleteURL := "https://api.example.com/resource/123"
+	deleteHeaders := map[string]string{
+		"Authorization": "Bearer <token>",
+	}
+
+	auth := &AuthDetails{
+		Type: "basic",
+		Params: map[string]string{
+			"username": "user",
+			"password": "pass",
+		},
+	}
+
+	getResponse, err := SendGETRequest(getURL, getHeaders, auth)
+	if err != nil {
+		fmt.Println("GET request failed:", err)
+	} else {
+		fmt.Println("GET response:", string(getResponse))
+	}
+
+	postResponse, err := SendPOSTRequest(postURL, postBody, postHeaders, nil)
+	if err != nil {
+		fmt.Println("POST request failed:", err)
+	} else {
+		fmt.Println("POST response:", string(postResponse))
+	}
+
+	putResponse, err := SendPUTRequest(putURL, putBody, putHeaders, auth)
+	if err != nil {
+		fmt.Println("PUT request failed:", err)
+	} else {
+		fmt.Println("PUT response:", string(putResponse))
+	}
+
+	deleteResponse, err := SendDELETERequest(deleteURL, deleteHeaders, auth)
+	if err != nil {
+		fmt.Println("DELETE request failed:", err)
+	} else {
+		fmt.Println("DELETE response:", string(deleteResponse))
+	}
+}
