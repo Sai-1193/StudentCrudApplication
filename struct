@@ -1,0 +1,182 @@
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+)
+
+// PostmanCollection represents the structure of a Postman collection JSON
+type PostmanCollection struct {
+    Info struct {
+        Name        string `json:"name"`
+        Description string `json:"description"`
+        // Add more fields if needed
+    } `json:"info"`
+    Item []struct {
+        // Define fields specific to Postman collection items
+    } `json:"item"`
+}
+
+// OpenAPISpec represents the structure of an OpenAPI JSON
+type OpenAPISpec struct {
+    OpenAPI string `json:"openapi"`
+    Paths   struct {
+        // Define fields specific to OpenAPI paths
+    } `json:"paths"`
+}
+
+func main() {
+    // Example JSON strings for Postman collection and OpenAPI spec
+    postmanJSON := `
+    {
+        "info": {
+            "name": "My API Collection",
+            "description": "Collection of APIs"
+        },
+        "item": [
+            {
+                "name": "Request 1",
+                "request": {
+                    "url": "http://example.com/api/endpoint",
+                    "method": "GET"
+                }
+            }
+        ]
+    }
+    `
+    openAPIJSON := `
+    {
+        "openapi": "3.0.0",
+        "info": {
+            "title": "My API",
+            "version": "1.0.0"
+        },
+        "paths": {
+            "/endpoint": {
+                "get": {
+                    "summary": "Endpoint summary",
+                    "responses": {
+                        "200": {
+                            "description": "Successful response"
+                        }
+                    }
+                }
+            }
+        }
+    }
+    `
+
+    // Detect and parse Postman collection JSON
+    var postmanData PostmanCollection
+    err := json.Unmarshal([]byte(postmanJSON), &postmanData)
+    if err == nil && postmanData.Info.Name != "" && len(postmanData.Item) > 0 {
+        fmt.Println("Detected: Postman Collection")
+        // Process Postman collection data
+    } else {
+        // Detect and parse OpenAPI JSON
+        var openAPIData OpenAPISpec
+        err := json.Unmarshal([]byte(openAPIJSON), &openAPIData)
+        if err == nil && openAPIData.OpenAPI != "" && len(openAPIData.Paths) > 0 {
+            fmt.Println("Detected: OpenAPI Specification")
+            // Process OpenAPI specification data
+        } else {
+            fmt.Println("Unknown JSON format")
+        }
+    }
+}
+
+
+
+
+To manually write Go structs based on an OpenAPI JSON file, you can examine the JSON structure and define corresponding structs in Go. Here's an example of how you can do this:
+
+Let's say you have the following OpenAPI JSON:
+
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Sample API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/users": {
+      "get": {
+        "summary": "Get all users",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+You can manually write Go structs based on this JSON:
+
+package main
+
+type Info struct {
+	Title   string `json:"title"`
+	Version string `json:"version"`
+}
+
+type Response200 struct {
+	Description string `json:"description"`
+	Content     struct {
+		ApplicationJSON struct {
+			Schema struct {
+				Type  string `json:"type"`
+				Items struct {
+					Type       string `json:"type"`
+					Properties struct {
+						ID   int    `json:"id"`
+						Name string `json:"name"`
+					} `json:"properties"`
+				} `json:"items"`
+			} `json:"schema"`
+		} `json:"application/json"`
+	} `json:"content"`
+}
+
+type PathGet struct {
+	Summary   string       `json:"summary"`
+	Responses Response200 `json:"responses"`
+}
+
+type Paths struct {
+	Users struct {
+		Get PathGet `json:"get"`
+	} `json:"/users"`
+}
+
+type OpenAPI struct {
+	OpenAPI string `json:"openapi"`
+	Info    Info   `json:"info"`
+	Paths   Paths  `json:"paths"`
+}
+
+func main() {
+	// Define your structs here
+}
+
+
