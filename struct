@@ -180,3 +180,96 @@ func main() {
 }
 
 
+
+
+package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "io/ioutil"
+    "net/http"
+)
+
+// PostmanRequest represents a Postman request object
+type PostmanRequest struct {
+    Method string            `json:"method"`
+    URL    PostmanURL        `json:"url"`
+    Header []PostmanHeader   `json:"header"`
+    Body   PostmanRequestBody `json:"body"`
+}
+
+// PostmanURL represents a Postman request URL object
+type PostmanURL struct {
+    Raw string `json:"raw"`
+}
+
+// PostmanHeader represents a Postman request header object
+type PostmanHeader struct {
+    Key   string `json:"key"`
+    Value string `json:"value"`
+}
+
+// PostmanRequestBody represents a Postman request body object
+type PostmanRequestBody struct {
+    Mode string                 `json:"mode"`
+    Raw  string                 `json:"raw"`
+    JSON map[string]interface{} `json:"json"`
+    // Add other types of bodies if needed
+}
+
+func main() {
+    // Read Postman collection JSON file
+    data, err := ioutil.ReadFile("postman_collection.json")
+    if err != nil {
+        fmt.Println("Error reading file:", err)
+        return
+    }
+
+    // Parse Postman collection JSON
+    var requests []PostmanRequest
+    if err := json.Unmarshal(data, &requests); err != nil {
+        fmt.Println("Error parsing JSON:", err)
+        return
+    }
+
+    // Loop through each request and execute it
+    for _, req := range requests {
+        fmt.Println("Executing", req.Method, "request to", req.URL.Raw)
+
+        // Create HTTP client
+        client := &http.Client{}
+
+        // Prepare request
+        httpRequest, err := http.NewRequest(req.Method, req.URL.Raw, bytes.NewBuffer([]byte(req.Body.Raw)))
+        if err != nil {
+            fmt.Println("Error creating request:", err)
+            continue
+        }
+
+        // Set headers
+        for _, header := range req.Header {
+            httpRequest.Header.Set(header.Key, header.Value)
+        }
+
+        // Execute request
+        httpResponse, err := client.Do(httpRequest)
+        if err != nil {
+            fmt.Println("Error executing request:", err)
+            continue
+        }
+        defer httpResponse.Body.Close()
+
+        // Read response body
+        responseBody, err := ioutil.ReadAll(httpResponse.Body)
+        if err != nil {
+            fmt.Println("Error reading response body:", err)
+            continue
+        }
+
+        // Print response body
+        fmt.Println("Response Body:", string(responseBody))
+    }
+}
+
