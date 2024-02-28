@@ -1,0 +1,31 @@
+func main() {
+    // Read OpenAPI JSON file
+    openAPIJSON, err := ioutil.ReadFile("openapi.json")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Read Postman Collection JSON file
+    postmanJSON, err := ioutil.ReadFile("postman_collection.json")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Parse OpenAPI JSON
+    var openAPI OpenAPI
+    if err := json.Unmarshal(openAPIJSON, &openAPI); err == nil {
+        fmt.Println("This is an OpenAPI JSON")
+        // You can access OpenAPI specific fields here
+        fmt.Println(openAPI.Openapi)
+    } else {
+        // If parsing fails, try parsing as Postman Collection JSON
+        var postman PostmanCollection
+        if err := json.Unmarshal(postmanJSON, &postman); err == nil {
+            fmt.Println("This is a Postman Collection JSON")
+            // You can access Postman Collection specific fields here
+            fmt.Println(postman.Info)
+        } else {
+            fmt.Println("Unknown JSON format")
+        }
+    }
+}
