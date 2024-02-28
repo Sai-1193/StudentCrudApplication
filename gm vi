@@ -1,3 +1,8 @@
+
+
+
+
+
 func main() {
     // Read OpenAPI JSON file
     openAPIJSON, err := ioutil.ReadFile("openapi.json")
@@ -29,3 +34,365 @@ func main() {
         }
     }
 }
+
+
+
+
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "io/ioutil"
+)
+
+type OpenAPI struct {
+    OpenAPI    string               `json:"openapi"`
+    Info       Info                 `json:"info"`
+    Servers    []Server             `json:"servers"`
+    Paths      map[string]PathItem  `json:"paths"`
+    Components Components           `json:"components"`
+}
+
+type Info struct {
+    Title       string `json:"title"`
+    Description string `json:"description"`
+    Version     string `json:"version"`
+}
+
+type Server struct {
+    URL         string `json:"url"`
+    Description string `json:"description"`
+}
+
+type PathItem struct {
+    Get    *Operation `json:"get,omitempty"`
+    Post   *Operation `json:"post,omitempty"`
+    // Add other HTTP methods as needed
+}
+
+type Operation struct {
+    Summary    string            `json:"summary"`
+    Tags       []string          `json:"tags"`
+    RequestBody *RequestBody     `json:"requestBody,omitempty"`
+    Responses  map[string]Response `json:"responses"`
+}
+
+type RequestBody struct {
+    Required bool               `json:"required"`
+    Content  map[string]MediaType `json:"content"`
+}
+
+type MediaType struct {
+    Schema Schema `json:"schema"`
+}
+
+type Schema struct {
+    Type       string               `json:"type"`
+    Properties map[string]Property `json:"properties"`
+    Required   []string             `json:"required"`
+}
+
+type Property struct {
+    Type string `json:"type"`
+    // Add other property attributes as needed
+}
+
+type Response struct {
+    Description string `json:"description"`
+    // Add other response attributes as needed
+}
+
+type Components struct {
+    // Add components like schemas, securitySchemes, etc.
+}
+
+func main() {
+    // Read the OpenAPI JSON file
+    data, err := ioutil.ReadFile("openapi.json")
+    if err != nil {
+        fmt.Println("Error reading file:", err)
+        return
+    }
+
+    // Parse the JSON data into the OpenAPI struct
+    var openAPI OpenAPI
+    if err := json.Unmarshal(data, &openAPI); err != nil {
+        fmt.Println("Error parsing JSON:", err)
+        return
+    }
+
+    // Now you can access the fields of the OpenAPI struct
+    fmt.Println("Title:", openAPI.Info.Title)
+    fmt.Println("Servers:")
+    for _, server := range openAPI.Servers {
+        fmt.Println("  URL:", server.URL)
+        fmt.Println("  Description:", server.Description)
+    }
+    fmt.Println("Paths:")
+    for path, pathItem := range openAPI.Paths {
+        fmt.Println("  Path:", path)
+        if pathItem.Get != nil {
+            fmt.Println("    GET:")
+            fmt.Println("      Summary:", pathItem.Get.Summary)
+            fmt.Println("      Tags:", pathItem.Get.Tags)
+            if pathItem.Get.RequestBody != nil {
+                fmt.Println("      Request Body:")
+                fmt.Println("        Required:", pathItem.Get.RequestBody.Required)
+                // Add code to handle content and schema
+            }
+            fmt.Println("      Responses:")
+            for code, response := range pathItem.Get.Responses {
+                fmt.Println("        Code:", code)
+                fmt.Println("          Description:", response.Description)
+            }
+        }
+        if pathItem.Post != nil {
+            fmt.Println("    POST:")
+            fmt.Println("      Summary:", pathItem.Post.Summary)
+            fmt.Println("      Tags:", pathItem.Post.Tags)
+            if pathItem.Post.RequestBody != nil {
+                fmt.Println("      Request Body:")
+                fmt.Println("        Required:", pathItem.Post.RequestBody.Required)
+                // Add code to handle content and schema
+            }
+            fmt.Println("      Responses:")
+            for code, response := range pathItem.Post.Responses {
+                fmt.Println("        Code:", code)
+                fmt.Println("          Description:", response.Description)
+            }
+        }
+        // Add handling for other HTTP methods as needed
+    }
+}
+
+
+
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "io/ioutil"
+    "github.com/go-resty/resty/v2"
+)
+
+type OpenAPI struct {
+    OpenAPI    string               `json:"openapi"`
+    Info       Info                 `json:"info"`
+    Servers    []Server             `json:"servers"`
+    Paths      map[string]PathItem  `json:"paths"`
+    Components Components           `json:"components"`
+}
+
+type Info struct {
+    Title       string `json:"title"`
+    Description string `json:"description"`
+    Version     string `json:"version"`
+}
+
+type Server struct {
+    URL         string `json:"url"`
+    Description string `json:"description"`
+}
+
+type PathItem struct {
+    Get    *Operation `json:"get,omitempty"`
+    Post   *Operation `json:"post,omitempty"`
+}
+
+type Operation struct {
+    Summary    string            `json:"summary"`
+    Tags       []string          `json:"tags"`
+    RequestBody *RequestBody     `json:"requestBody,omitempty"`
+    Responses  map[string]Response `json:"responses"`
+}
+
+type RequestBody struct {
+    Required bool               `json:"required"`
+    Content  map[string]MediaType `json:"content"`
+}
+
+type MediaType struct {
+    Schema Schema `json:"schema"`
+}
+
+type Schema struct {
+    Type       string               `json:"type"`
+    Properties map[string]Property `json:"properties"`
+    Required   []string             `json:"required"`
+}
+
+type Property struct {
+    Type string `json:"type"`
+}
+
+type Response struct {
+    Description string `json:"description"`
+}
+
+type Components struct {
+    // Add components like schemas, securitySchemes, etc.
+}
+
+func main() {
+    // Read the OpenAPI JSON file
+    data, err := ioutil.ReadFile("openapi.json")
+    if err != nil {
+        fmt.Println("Error reading file:", err)
+        return
+    }
+
+    // Parse the JSON data into the OpenAPI struct
+    var openAPI OpenAPI
+    if err := json.Unmarshal(data, &openAPI); err != nil {
+        fmt.Println("Error parsing JSON:", err)
+        return
+    }
+
+    // Initialize Resty client
+    client := resty.New()
+
+    // Perform GET request
+    fmt.Println("GET request:")
+    resp, err := client.R().Get(openAPI.Servers[0].URL + "/users")
+    if err != nil {
+        fmt.Println("Error making GET request:", err)
+        return
+    }
+    fmt.Println("Response:", resp.String())
+
+    // Perform POST request
+    fmt.Println("POST request:")
+
+    // Extracting the request body schema
+    requestBodySchema := openAPI.Paths["/users"].Post.RequestBody.Content["application/json"].Schema
+
+    // Constructing the request body based on the schema
+    requestBody := make(map[string]interface{})
+    for key, value := range requestBodySchema.Properties {
+        // You can customize this part based on the type and format of each property
+        // Here, we're assuming all properties are strings
+        requestBody[key] = "example_value"
+    }
+
+    resp, err = client.R().
+        SetHeader("Content-Type", "application/json").
+        SetBody(requestBody).
+        Post(openAPI.Servers[0].URL + "/users")
+    if err != nil {
+        fmt.Println("Error making POST request:", err)
+        return
+    }
+    fmt.Println("Response:", resp.String())
+}
+
+
+
+
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "io/ioutil"
+    "github.com/go-resty/resty/v2"
+)
+
+type OpenAPI struct {
+    Info struct {
+        Title       string `json:"title"`
+        Description string `json:"description"`
+        Version     string `json:"version"`
+    } `json:"info"`
+    Servers []struct {
+        URL         string `json:"url"`
+        Description string `json:"description"`
+    } `json:"servers"`
+    Tags []struct {
+        Name        string `json:"name"`
+        Description string `json:"description"`
+    } `json:"tags"`
+    Paths map[string]struct {
+        Get struct {
+            Summary    string `json:"summary"`
+            Tags       []string `json:"tags"`
+            Responses  map[string]struct {
+                Description string `json:"description"`
+            } `json:"responses"`
+        } `json:"get"`
+        Post struct {
+            Summary    string `json:"summary"`
+            Tags       []string `json:"tags"`
+            RequestBody struct {
+                Required bool `json:"required"`
+                Content  map[string]struct {
+                    Schema struct {
+                        Type       string `json:"type"`
+                        Properties struct {
+                            Username struct {
+                                Type string `json:"type"`
+                            } `json:"username"`
+                            Email struct {
+                                Type   string `json:"type"`
+                                Format string `json:"format"`
+                            } `json:"email"`
+                        } `json:"properties"`
+                        Required []string `json:"required"`
+                    } `json:"schema"`
+                } `json:"content"`
+            } `json:"requestBody"`
+            Responses  map[string]struct {
+                Description string `json:"description"`
+            } `json:"responses"`
+        } `json:"post"`
+    } `json:"paths"`
+}
+
+func main() {
+    // Read the OpenAPI JSON file
+    data, err := ioutil.ReadFile("openapi.json")
+    if err != nil {
+        fmt.Println("Error reading file:", err)
+        return
+    }
+
+    // Parse the JSON data into the OpenAPI struct
+    var openAPI OpenAPI
+    if err := json.Unmarshal(data, &openAPI); err != nil {
+        fmt.Println("Error parsing JSON:", err)
+        return
+    }
+
+    // Initialize Resty client
+    client := resty.New()
+
+    // Perform GET request
+    fmt.Println("GET request:")
+    resp, err := client.R().Get(openAPI.Servers[0].URL + "/users")
+    if err != nil {
+        fmt.Println("Error making GET request:", err)
+        return
+    }
+    fmt.Println("Response:", resp.String())
+
+    // Perform POST request
+    fmt.Println("POST request:")
+    requestBody := map[string]string{
+        "username": "example_user",
+        "email":    "user@example.com",
+    }
+    resp, err = client.R().
+        SetHeader("Content-Type", "application/json").
+        SetBody(requestBody).
+        Post(openAPI.Servers[0].URL + "/users")
+    if err != nil {
+        fmt.Println("Error making POST request:", err)
+        return
+    }
+    fmt.Println("Response:", resp.String())
+}
+
+
+
+
