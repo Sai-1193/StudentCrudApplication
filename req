@@ -1,178 +1,45 @@
-package main
+func getRequest(openAPI OpenAPI, path string, parameterValues map[string]string) {
+	// Check if the path exists in the OpenAPI document
+	if details, ok := openAPI.Paths[path]; ok {
+		// Check if the GET method is defined for the path
+		if methodDetails, ok := details["get"]; ok {
+			// Extract tags if defined for the path
+			tags := extractTags(openAPI, path)
+			// Find the corresponding server description for the first tag in the path
+			serverDescription := findServerDescription(openAPI, tags)
 
-import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-)
+			// Construct URL based on the selected server description
+			url := constructURL(openAPI, path, serverDescription)
 
-// RequestDetails represents details for making HTTP requests
-type RequestDetails struct {
-	Method      string
-	URL         string
-	Body        interface{}
-	Headers     map[string]string
-	Auth        *AuthDetails
-}
+			// Extract authentication details
+			auth := extractAuth(openAPI, path, "get")
 
-// AuthDetails represents authentication details
-type AuthDetails struct {
-	Type   string
-	Params map[string]string
-}
+			fmt.Printf("Sending GET request to %s\n", url)
 
-// SendGETRequest sends a GET request
-func SendGETRequest(url string, headers map[string]string, auth *AuthDetails) ([]byte, error) {
-	return sendRequest(RequestDetails{
-		Method:  "GET",
-		URL:     url,
-		Headers: headers,
-		Auth:    auth,
-	})
-}
+			// Create request
+			req := client.R()
 
-// SendPOSTRequest sends a POST request
-func SendPOSTRequest(url string, body interface{}, headers map[string]string, auth *AuthDetails) ([]byte, error) {
-	return sendRequest(RequestDetails{
-		Method:  "POST",
-		URL:     url,
-		Body:    body,
-		Headers: headers,
-		Auth:    auth,
-	})
-}
+			// Add authentication if available
+			if auth != "" {
+				req = req.SetHeader("Authorization", auth)
+			}
 
-// SendPUTRequest sends a PUT request
-func SendPUTRequest(url string, body interface{}, headers map[string]string, auth *AuthDetails) ([]byte, error) {
-	return sendRequest(RequestDetails{
-		Method:  "PUT",
-		URL:     url,
-		Body:    body,
-		Headers: headers,
-		Auth:    auth,
-	})
-}
+			// Add path parameters to the URL
+			for paramName, paramValue := range parameterValues {
+				url = strings.ReplaceAll(url, "{"+paramName+"}", paramValue)
+			}
 
-// SendDELETERequest sends a DELETE request
-func SendDELETERequest(url string, headers map[string]string, auth *AuthDetails) ([]byte, error) {
-	return sendRequest(RequestDetails{
-		Method:  "DELETE",
-		URL:     url,
-		Headers: headers,
-		Auth:    auth,
-	})
-}
+			// Send request
+			resp, err := req.Get(url)
+			if err != nil {
+				log.Fatalf("Error sending GET request: %s", err)
+			}
 
-func sendRequest(reqDetails RequestDetails) ([]byte, error) {
-	client := &http.Client{}
-
-	// Prepare request body
-	var requestBody []byte
-	if reqDetails.Body != nil {
-		var err error
-		requestBody, err = json.Marshal(reqDetails.Body)
-		if err != nil {
-			return nil, err
+			fmt.Println("Response:", resp)
+		} else {
+			fmt.Printf("GET method not defined for path: %s\n", path)
 		}
-	}
-
-	// Create HTTP request
-	request, err := http.NewRequest(reqDetails.Method, reqDetails.URL, bytes.NewBuffer(requestBody))
-	if err != nil {
-		return nil, err
-	}
-
-	// Set headers
-	for key, value := range reqDetails.Headers {
-		request.Header.Set(key, value)
-	}
-
-	// Set authentication
-	if reqDetails.Auth != nil {
-		if reqDetails.Auth.Type == "basic" && len(reqDetails.Auth.Params) == 2 {
-			request.SetBasicAuth(reqDetails.Auth.Params["username"], reqDetails.Auth.Params["password"])
-		}
-	}
-
-	// Execute request
-	response, err := client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-	defer response.Body.Close()
-
-	// Read response body
-	responseBody, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return responseBody, nil
-}
-
-func main() {
-	// Example usage
-	getURL := "https://api.example.com/resource"
-	getHeaders := map[string]string{
-		"Authorization": "Bearer <token>",
-	}
-
-	postURL := "https://api.example.com/resource"
-	postBody := map[string]interface{}{
-		"key": "value",
-	}
-	postHeaders := map[string]string{
-		"Content-Type": "application/json",
-	}
-
-	putURL := "https://api.example.com/resource/123"
-	putBody := map[string]interface{}{
-		"key": "updated_value",
-	}
-	putHeaders := map[string]string{
-		"Content-Type": "application/json",
-	}
-
-	deleteURL := "https://api.example.com/resource/123"
-	deleteHeaders := map[string]string{
-		"Authorization": "Bearer <token>",
-	}
-
-	auth := &AuthDetails{
-		Type: "basic",
-		Params: map[string]string{
-			"username": "user",
-			"password": "pass",
-		},
-	}
-
-	getResponse, err := SendGETRequest(getURL, getHeaders, auth)
-	if err != nil {
-		fmt.Println("GET request failed:", err)
 	} else {
-		fmt.Println("GET response:", string(getResponse))
-	}
-
-	postResponse, err := SendPOSTRequest(postURL, postBody, postHeaders, nil)
-	if err != nil {
-		fmt.Println("POST request failed:", err)
-	} else {
-		fmt.Println("POST response:", string(postResponse))
-	}
-
-	putResponse, err := SendPUTRequest(putURL, putBody, putHeaders, auth)
-	if err != nil {
-		fmt.Println("PUT request failed:", err)
-	} else {
-		fmt.Println("PUT response:", string(putResponse))
-	}
-
-	deleteResponse, err := SendDELETERequest(deleteURL, deleteHeaders, auth)
-	if err != nil {
-		fmt.Println("DELETE request failed:", err)
-	} else {
-		fmt.Println("DELETE response:", string(deleteResponse))
+		fmt.Printf("Path not found: %s\n", path)
 	}
 }
