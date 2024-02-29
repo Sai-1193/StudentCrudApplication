@@ -394,5 +394,21 @@ func main() {
 }
 
 
+func extractTags(openAPI OpenAPI, path string) []string {
+	tags := []string{}
 
+	// Check if the path exists in the OpenAPI document
+	if details, ok := openAPI.Paths[path]; ok {
+		// Check if tags are defined for the path
+		if tagsSlice, ok := details["tags"]; ok {
+			for _, tag := range tagsSlice.([]interface{}) {
+				if tagName, ok := tag.(string); ok {
+					tags = append(tags, tagName)
+				}
+			}
+		}
+	}
+
+	return tags
+}
 
