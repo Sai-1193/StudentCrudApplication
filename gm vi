@@ -412,3 +412,79 @@ func extractTags(openAPI OpenAPI, path string) []string {
 	return tags
 }
 
+
+func postRequest(client *resty.Client, openAPI OpenAPI, path string) {
+	// Check if the path exists in the OpenAPI document
+	if details, ok := openAPI.Paths[path]; ok {
+		// Check if the POST method is defined for the path
+		if methodDetails, ok := details["post"]; ok {
+			// Extract tags if defined for the path
+			tags := extractTags(openAPI, path)
+			// Find the corresponding server description for the first tag in the path
+			serverDescription := findServerDescription(openAPI, tags)
+
+			// Extract headers if defined
+			headers := extractHeaders(openAPI, path, "post")
+			// Extract request body if defined
+			requestBody := extractRequestBody(openAPI, path, "post")
+			// Construct URL based on the selected server description
+			url := constructURL(openAPI, path, serverDescription)
+
+			// Extract authentication details
+			auth := extractAuth(openAPI, path, "post")
+
+			fmt.Printf("Sending POST request to %s\n", url)
+
+			// Create request
+			req := client.R().
+				SetHeaders(headers).
+				SetBody(requestBody)
+
+			// Add authentication if available
+			if auth != "" {
+				req = req.SetHeader("Authorization", auth)
+			}
+
+			// Send request
+			resp, err := req.Post(url)
+			if err != nil {
+				log.Fatalf("Error sending POST request: %s", err)
+			}
+
+			fmt.Println("Response:", resp)
+		} else {
+			fmt.Printf("POST method not defined for path: %s\n", path)
+		}
+	} else {
+		fmt.Printf("Path not found: %s\n", path)
+	}
+}
+
+// extractAuth extracts authentication details from OpenAPI JSON
+func extractAuth(openAPI OpenAPI, path, method string) string {
+	// Check if the path exists in the OpenAPI document
+	if details, ok := openAPI.Paths[path]; ok {
+		// Check if the method exists for the path
+		if methodDetails, ok := details[method]; ok {
+			// Check if there are security schemes defined for the method
+			if security, ok := methodDetails.(map[string]interface{})["security"]; ok {
+				// Iterate over security schemes
+				for _, scheme := range security.([]interface{}) {
+					schemeMap := scheme.(map[string]interface{})
+					// Check if it's a basic authentication scheme
+					if _, ok := schemeMap["basic"]; ok {
+						// Handle basic authentication
+						return "Basic <base64-encoded-username-password>"
+					}
+					// Check if it's a bearer token authentication scheme
+					if _, ok := schemeMap["bearer"]; ok {
+						// Handle bearer token authentication
+						return "Bearer <token>"
+					}
+				}
+			}
+		}
+	}
+	return "" // No authentication found
+}
+
