@@ -3,6 +3,9 @@
 
 
 
+
+
+
 func main() {
     // Read OpenAPI JSON file
     openAPIJSON, err := ioutil.ReadFile("openapi.json")
@@ -576,4 +579,65 @@ func deleteRequest(client *resty.Client, openAPI OpenAPI, path string) {
 		fmt.Printf("Path not found: %s\n", path)
 	}
 }
+
+
+
+
+func extractRequestBody(openAPI OpenAPI, path, method string) interface{} {
+	// Check if the path exists in the OpenAPI document
+	if details, ok := openAPI.Paths[path]; ok {
+		// Check if the method exists for the path
+		if methodDetails, ok := details[method]; ok {
+			// Check if the request body is defined
+			if requestBody, ok := methodDetails.RequestBody; ok {
+				// Extract the content type
+				if content, ok := requestBody.Content["application/json"]; ok {
+					// Extract the schema
+					schema := content.Schema
+					// For simplicity, assuming only JSON content type
+					return generateRequestBody(schema)
+				}
+			}
+		}
+	}
+	return nil // No request body found
+}
+
+func generateRequestBody(schema Schema) interface{} {
+	// Check the type of schema
+	switch schema.Type {
+	case "object":
+		// Generate a sample object based on the schema properties
+		body := make(map[string]interface{})
+		for propName, prop := range schema.Properties {
+			body[propName] = generateProperty(prop)
+		}
+		return body
+	case "array":
+		// Generate a sample array based on the schema items
+		items := schema.Items
+		return []interface{}{generateProperty(items)}
+	default:
+		// Unsupported schema type
+		return nil
+	}
+}
+
+func generateProperty(prop Property) interface{} {
+	// Check the type of property
+	switch prop.Type {
+	case "string":
+		return "example_string"
+	case "integer":
+		return 123
+	case "number":
+		return 123.45
+	case "boolean":
+		return true
+	default:
+		return nil
+	}
+}
+
+
 
