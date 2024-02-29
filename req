@@ -43,22 +43,23 @@ func getRequest(openAPI OpenAPI, path string) {
 			fmt.Printf("GET method not defined for path: %s\n", path)
 		}
 	} else {
-		fmt.Printf("Path not found: %s\n", path)
-	}
-}
+		fmt.Printf("Path not found: %s\
 
 
-func extractExampleParameterValues(openAPI OpenAPI, path string) map[string]string {
+func extractExampleParameterValues(openAPI OpenAPI, path string, method string) map[string]string {
 	parameterValues := make(map[string]string)
 
 	// Check if the path exists in the OpenAPI document
 	if details, ok := openAPI.Paths[path]; ok {
-		// Iterate over path parameters
-		for paramName, paramDetails := range details.Parameters {
-			if paramDetails.In == "path" {
-				// Extract example value if available
-				if example, ok := paramDetails.Example.(string); ok {
-					parameterValues[paramName] = example
+		// Check if the method is defined for the path
+		if methodDetails, ok := details[method]; ok {
+			// Extract parameters if defined
+			for _, param := range methodDetails.Parameters {
+				if param.In == "path" {
+					// Extract example value if available
+					if example, ok := param.Example.(string); ok {
+						parameterValues[param.Name] = example
+					}
 				}
 			}
 		}
