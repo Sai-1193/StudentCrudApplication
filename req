@@ -1,4 +1,4 @@
-func getRequest(openAPI OpenAPI, path string, parameterValues map[string]string) {
+func getRequest(openAPI OpenAPI, path string) {
 	// Check if the path exists in the OpenAPI document
 	if details, ok := openAPI.Paths[path]; ok {
 		// Check if the GET method is defined for the path
@@ -24,6 +24,9 @@ func getRequest(openAPI OpenAPI, path string, parameterValues map[string]string)
 				req = req.SetHeader("Authorization", auth)
 			}
 
+			// Extract example parameter values from the OpenAPI specification
+			parameterValues := extractExampleParameterValues(openAPI, path)
+
 			// Add path parameters to the URL
 			for paramName, paramValue := range parameterValues {
 				url = strings.ReplaceAll(url, "{"+paramName+"}", paramValue)
@@ -43,3 +46,24 @@ func getRequest(openAPI OpenAPI, path string, parameterValues map[string]string)
 		fmt.Printf("Path not found: %s\n", path)
 	}
 }
+
+
+func extractExampleParameterValues(openAPI OpenAPI, path string) map[string]string {
+	parameterValues := make(map[string]string)
+
+	// Check if the path exists in the OpenAPI document
+	if details, ok := openAPI.Paths[path]; ok {
+		// Iterate over path parameters
+		for paramName, paramDetails := range details.Parameters {
+			if paramDetails.In == "path" {
+				// Extract example value if available
+				if example, ok := paramDetails.Example.(string); ok {
+					parameterValues[paramName] = example
+				}
+			}
+		}
+	}
+
+	return parameterValues
+}
+
