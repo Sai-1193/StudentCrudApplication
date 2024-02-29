@@ -488,3 +488,92 @@ func extractAuth(openAPI OpenAPI, path, method string) string {
 	return "" // No authentication found
 }
 
+
+func putRequest(client *resty.Client, openAPI OpenAPI, path string) {
+	// Check if the path exists in the OpenAPI document
+	if details, ok := openAPI.Paths[path]; ok {
+		// Check if the PUT method is defined for the path
+		if methodDetails, ok := details["put"]; ok {
+			// Extract tags if defined for the path
+			tags := extractTags(openAPI, path)
+			// Find the corresponding server description for the first tag in the path
+			serverDescription := findServerDescription(openAPI, tags)
+
+			// Extract headers if defined
+			headers := extractHeaders(openAPI, path, "put")
+			// Extract request body if defined
+			requestBody := extractRequestBody(openAPI, path, "put")
+			// Construct URL based on the selected server description
+			url := constructURL(openAPI, path, serverDescription)
+
+			// Extract authentication details
+			auth := extractAuth(openAPI, path, "put")
+
+			fmt.Printf("Sending PUT request to %s\n", url)
+
+			// Create request
+			req := client.R().
+				SetHeaders(headers).
+				SetBody(requestBody)
+
+			// Add authentication if available
+			if auth != "" {
+				req = req.SetHeader("Authorization", auth)
+			}
+
+			// Send request
+			resp, err := req.Put(url)
+			if err != nil {
+				log.Fatalf("Error sending PUT request: %s", err)
+			}
+
+			fmt.Println("Response:", resp)
+		} else {
+			fmt.Printf("PUT method not defined for path: %s\n", path)
+		}
+	} else {
+		fmt.Printf("Path not found: %s\n", path)
+	}
+}
+
+func deleteRequest(client *resty.Client, openAPI OpenAPI, path string) {
+	// Check if the path exists in the OpenAPI document
+	if details, ok := openAPI.Paths[path]; ok {
+		// Check if the DELETE method is defined for the path
+		if methodDetails, ok := details["delete"]; ok {
+			// Extract tags if defined for the path
+			tags := extractTags(openAPI, path)
+			// Find the corresponding server description for the first tag in the path
+			serverDescription := findServerDescription(openAPI, tags)
+
+			// Construct URL based on the selected server description
+			url := constructURL(openAPI, path, serverDescription)
+
+			// Extract authentication details
+			auth := extractAuth(openAPI, path, "delete")
+
+			fmt.Printf("Sending DELETE request to %s\n", url)
+
+			// Create request
+			req := client.R()
+
+			// Add authentication if available
+			if auth != "" {
+				req = req.SetHeader("Authorization", auth)
+			}
+
+			// Send request
+			resp, err := req.Delete(url)
+			if err != nil {
+				log.Fatalf("Error sending DELETE request: %s", err)
+			}
+
+			fmt.Println("Response:", resp)
+		} else {
+			fmt.Printf("DELETE method not defined for path: %s\n", path)
+		}
+	} else {
+		fmt.Printf("Path not found: %s\n", path)
+	}
+}
+
