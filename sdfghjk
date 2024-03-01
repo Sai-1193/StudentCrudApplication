@@ -1,0 +1,65 @@
+func postRequest(client *resty.Client, openAPI OpenAPI, path string, metadataId string, requestBody interface{}, basicAuth BasicAuth, bearerToken BearerToken) {
+	// Check if the path exists in the OpenAPI document
+	if details, ok := openAPI.Paths[path]; ok {
+		// Check if the POST method is defined for the path
+		if methodDetails, ok := details["post"]; ok {
+			// Extract headers if defined
+			headers := extractHeaders(openAPI, path, "post", basicAuth, bearerToken)
+			// Extract query parameters if defined (if needed)
+			queryParams := extractQueryParams(openAPI, path, "post")
+			// Extract path parameters if needed
+			url := constructURL(openAPI, path, metadataId)
+
+			fmt.Printf("Sending POST request to %s\n", url)
+
+			// Create request
+			resp, err := client.R().
+				SetHeaders(headers).
+				SetQueryParams(queryParams).
+				SetBody(requestBody).
+				Post(url)
+			if err != nil {
+				log.Fatalf("Error sending POST request: %s", err)
+			}
+
+			fmt.Println("Response:", resp)
+		} else {
+			fmt.Printf("POST method not defined for path: %s\n", path)
+		}
+	} else {
+		fmt.Printf("Path not found: %s\n", path)
+	}
+}
+
+func putRequest(client *resty.Client, openAPI OpenAPI, path string, metadataId string, requestBody interface{}, basicAuth BasicAuth, bearerToken BearerToken) {
+	// Check if the path exists in the OpenAPI document
+	if details, ok := openAPI.Paths[path]; ok {
+		// Check if the PUT method is defined for the path
+		if methodDetails, ok := details["put"]; ok {
+			// Extract headers if defined
+			headers := extractHeaders(openAPI, path, "put", basicAuth, bearerToken)
+			// Extract query parameters if defined (if needed)
+			queryParams := extractQueryParams(openAPI, path, "put")
+			// Extract path parameters if needed
+			url := constructURL(openAPI, path, metadataId)
+
+			fmt.Printf("Sending PUT request to %s\n", url)
+
+			// Create request
+			resp, err := client.R().
+				SetHeaders(headers).
+				SetQueryParams(queryParams).
+				SetBody(requestBody).
+				Put(url)
+			if err != nil {
+				log.Fatalf("Error sending PUT request: %s", err)
+			}
+
+			fmt.Println("Response:", resp)
+		} else {
+			fmt.Printf("PUT method not defined for path: %s\n", path)
+		}
+	} else {
+		fmt.Printf("Path not found: %s\n", path)
+	}
+}
