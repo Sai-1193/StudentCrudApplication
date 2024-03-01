@@ -1,3 +1,82 @@
+func getRequest(client *resty.Client, openAPI OpenAPI, path string, metadataId string, basicAuth BasicAuth, bearerToken BearerToken) {
+	// Check if the path exists in the OpenAPI document
+	if details, ok := openAPI.Paths[path]; ok {
+		// Check if the GET method is defined for the path
+		if methodDetails, ok := details["get"]; ok {
+			// Extract headers if defined
+			headers := extractHeaders(openAPI, path, "get", basicAuth, bearerToken)
+			// Extract query parameters if defined
+			queryParams := extractQueryParams(openAPI, path, "get")
+			// Extract path parameters if defined
+			url := constructURL(openAPI, path, metadataId)
+
+			fmt.Printf("Sending GET request to %s\n", url)
+
+			// Create request
+			resp, err := client.R().
+				SetHeaders(headers).
+				SetQueryParams(queryParams).
+				Get(url)
+			if err != nil {
+				log.Fatalf("Error sending GET request: %s", err)
+			}
+
+			fmt.Println("Response:", resp)
+		} else {
+			fmt.Printf("GET method not defined for path: %s\n", path)
+		}
+	} else {
+		fmt.Printf("Path not found: %s\n", path)
+	}
+}
+
+// extractHeaders extracts headers from OpenAPI JSON
+func extractHeaders(openAPI OpenAPI, path, method string, basicAuth BasicAuth, bearerToken BearerToken) map[string]string {
+	headers := make(map[string]string)
+
+	// Check if the path exists in the OpenAPI document
+	if details, ok := openAPI.Paths[path]; ok {
+		// Check if the method exists for the path
+		if methodDetails, ok := details[method]; ok {
+			// Check if there are headers defined for the method
+			if params, ok := methodDetails.(map[string]interface{})["parameters"]; ok {
+				for _, param := range params.([]interface{}) {
+					paramMap := param.(map[string]interface{})
+					if in, ok := paramMap["in"].(string); ok && in == "header" {
+						if name, ok := paramMap["name"].(string); ok {
+							if example, ok := paramMap["example"].(string); ok {
+								headers[name] = example
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Add basic auth headers if provided
+	if basicAuth.Token != "" {
+		headers["Authorization"] = "Basic " + basicAuth.Token
+	}
+
+	// Add bearer token header if provided
+	if bearerToken.Token != "" {
+		headers["Authorization"] = "Bearer " + bearerToken.Token
+	}
+
+	return headers
+}
+
+
+
+
+
+
+
+
+
+
+
 func postRequest(client *resty.Client, openAPI OpenAPI, path string, metadataId string, requestBody interface{}, basicAuth BasicAuth, bearerToken BearerToken) {
 	// Check if the path exists in the OpenAPI document
 	if details, ok := openAPI.Paths[path]; ok {
