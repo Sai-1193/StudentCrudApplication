@@ -1,0 +1,74 @@
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "log"
+    "net/http"
+    "time"
+
+    "github.com/go-chi/chi"
+    "github.com/go-chi/render"
+)
+
+// RequestPayload represents the structure of the incoming JSON payload
+type RequestPayload struct {
+    Environment     string `json:"environment"`
+    ApplicationName string `json:"application_name"`
+    Timestamp       string `json:"timestamp"`
+}
+
+// Report represents a generated report
+type Report struct {
+    ReportID    string `json:"report_id"`
+    UniqueID    string `json:"unique_id"`
+    ReportName  string `json:"report_name"`
+}
+
+var sequenceNumber int
+
+// GenerateReport generates a report based on the provided request payload
+func GenerateReport(payload RequestPayload) Report {
+    // Generate report ID with sequence number
+    sequenceNumber++
+    reportID := fmt.Sprintf("RPT-%d", sequenceNumber)
+
+    // Generate unique ID with short number
+    uniqueID := fmt.Sprintf("UID-%d", time.Now().UnixNano())
+
+    // Use the timestamp from the request payload
+    timestamp := payload.Timestamp
+
+    // Generate report name
+    reportName := fmt.Sprintf("Report_%s_%s_%s", payload.Environment, payload.ApplicationName, timestamp)
+
+    return Report{
+        ReportID:    reportID,
+        UniqueID:    uniqueID,
+        ReportName:  reportName,
+    }
+}
+
+// ValidateHandler handles the validation and report generation logic
+func ValidateHandler(w http.ResponseWriter, r *http.Request) {
+    var payload RequestPayload
+    err := json.NewDecoder(r.Body).Decode(&payload)
+    if err != nil {
+        http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+        return
+    }
+
+    // Generate the report
+    report := GenerateReport(payload)
+
+    // Return the generated report in the response
+    render.JSON(w, r, report)
+}
+
+func main() {
+    r := chi.NewRouter()
+    r.Post("/validate", ValidateHandler)
+
+    log.Println("Server is running on :8080...")
+    http.ListenAndServe(":8080", r)
+}
