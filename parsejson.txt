@@ -202,5 +202,23 @@ func requestHeaders(headers []struct {
 	return headerMap
 }
 
+func processRequestBody(body string, variables map[string]interface{}) string {
+    // Check if the request body contains variable references
+    if strings.HasPrefix(body, "{{") && strings.HasSuffix(body, "}}") {
+        // Extract the variable key
+        variableKey := body[2 : len(body)-2]
+        // Check if the variable key exists in the variables map
+        if variableValue, ok := variables[variableKey]; ok {
+            // If the variable key exists, use its value as the body
+            return variableValue.(string)
+        }
+    }
+    // If no variable references are found or the variable key does not exist, return the original body
+    return body
+}
+
+requestBody := processRequestBody(request.Body, collection.Variables)
+
+
 
 
