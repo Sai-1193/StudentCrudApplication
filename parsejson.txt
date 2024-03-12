@@ -171,3 +171,36 @@ func requestHeaders(headers []struct {
 	}
 	return headerMap
 }
+
+
+
+
+func requestHeaders(headers []struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}, variables map[string]interface{}) map[string]string {
+	// Convert request headers from the Postman item to a map that Go-Resty can use.
+	headerMap := make(map[string]string)
+	for _, header := range headers {
+		// Check if the header value contains a variable reference
+		if strings.HasPrefix(header.Value, "{{") && strings.HasSuffix(header.Value, "}}") {
+			// Extract the variable key
+			variableKey := header.Value[2 : len(header.Value)-2]
+			// Check if the variable key exists in the variables map
+			if variableValue, ok := variables[variableKey]; ok {
+				// If the variable key exists, use its value as the header value
+				headerMap[header.Key] = variableValue.(string)
+			} else {
+				// If the variable key does not exist, use the original header value
+				headerMap[header.Key] = header.Value
+			}
+		} else {
+			// If the header value does not contain a variable reference, use it as is
+			headerMap[header.Key] = header.Value
+		}
+	}
+	return headerMap
+}
+
+
+
