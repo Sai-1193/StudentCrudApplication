@@ -1,0 +1,35 @@
+// FloatingLabelInput.tsx
+import React, { useState } from 'react';
+import './FloatingLabelInput.css'; // Import CSS file for styling
+
+interface FloatingLabelInputProps {
+  label: string;
+  type?: string;
+  value: string;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({ label, type = 'text', value, onChange }) => {
+  const [isFocused, setIsFocused] = useState(false);
+
+  const handleFocus = () => setIsFocused(true);
+  const handleBlur = () => setIsFocused(value !== '' ? true : false);
+
+  return (
+    <div className="floating-label-group">
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        className="floating-label-input"
+      />
+      <label className={`floating-label ${isFocused || value ? 'floating-label-focused' : ''}`}>
+        {label}
+      </label>
+    </div>
+  );
+};
+
+export default FloatingLabelInput;
