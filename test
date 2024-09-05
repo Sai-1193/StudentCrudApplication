@@ -1,0 +1,135 @@
+// App.tsx
+import React, { useState, useEffect } from 'react';
+import YAMLEditor from './YAMLEditor';
+import YAMLViewer from './YAMLViewer';
+import YAML from 'js-yaml';
+
+interface Test {
+  name: string;
+  description: string;
+  priority: string;
+}
+
+const App: React.FC = () => {
+  const [yamlContent, setYamlContent] = useState<string>('tests: []');
+  const [tests, setTests] = useState<Test[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [test, setTest] = useState<Test | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (test) {
+      setTest(test);
+    } else {
+      setTest({ name: '', description: '', priority: '' });
+    }
+  }, [test]);
+
+  const addTest = (newTest: Test) => {
+    const updatedTests = [...tests, newTest];
+    setTests(updatedTests);
+    setYamlContent(YAML.dump({ tests: updatedTests }));
+  };
+
+  const updateTest = (updatedTest: Test) => {
+    if (editingIndex !== null) {
+      const updatedTests = tests.map((test, index) =>
+        index === editingIndex ? updatedTest : test
+      );
+      setTests(updatedTests);
+      setYamlContent(YAML.dump({ tests: updatedTests }));
+      setEditingIndex(null);
+    }
+  };
+
+  const handleOpenModal = (test?: Test, index?: number) => {
+    setTest(test ?? { name: '', description: '', priority: '' });
+    setEditingIndex(index ?? null);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setTest(null);
+    setEditingIndex(null);
+  };
+
+  const handleSave = () => {
+    if (test && test.name.trim()) {
+      if (editingIndex !== null) {
+        updateTest(test);
+      } else {
+        addTest(test);
+      }
+      handleCloseModal();
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex' }}>
+      <div style={{ width: '50%', padding: '10px' }}>
+        <button onClick={() => handleOpenModal()}>ADD TEST</button>
+        <div>
+          <h3>Added Tests</h3>
+          <ul>
+            {tests.map((test, index) => (
+              <li key={index}>
+                {test.name}
+                <button onClick={() => handleOpenModal(test, index)}>Edit</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <YAMLEditor yamlContent={yamlContent} onChange={setYamlContent} />
+      </div>
+      <div style={{ width: '50%' }}>
+        <YAMLViewer yamlContent={yamlContent} />
+      </div>
+      {isModalOpen && (
+        <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '20px', border: '1px solid black', zIndex: 1000 }}>
+          <h2>{editingIndex !== null ? 'Edit Test' : 'Add Test'}</h2>
+          <form>
+            <div>
+              <label>Name:</label>
+              <input
+                type="text"
+                value={test?.name || ''}
+                onChange={(e) => setTest(test ? { ...test, name: e.target.value } : null)}
+                placeholder="Test name"
+              />
+            </div>
+            <div>
+              <label>Description:</label>
+              <input
+                type="text"
+                value={test?.description || ''}
+                onChange={(e) => setTest(test ? { ...test, description: e.target.value } : null)}
+                placeholder="Test description"
+              />
+            </div>
+            <div>
+              <label>Priority:</label>
+              <select
+                value={test?.priority || ''}
+                onChange={(e) => setTest(test ? { ...test, priority: e.target.value } : null)}
+              >
+                <option value="">Select priority</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+            <button type="button" onClick={handleSave}>
+              {editingIndex !== null ? 'Save' : 'Add'}
+            </button>
+            <button type="button" onClick={handleCloseModal}>
+              Cancel
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default App;
