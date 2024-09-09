@@ -1,0 +1,109 @@
+import React, { useState, ChangeEvent } from 'react';
+
+// Inline CSS for the floating label effect
+const styles = {
+  formGroup: {
+    position: 'relative',
+    marginBottom: '1.5rem',
+  },
+  input: {
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    padding: '1rem',
+    width: '100%',
+    fontSize: '1rem',
+    backgroundColor: '#fff',
+    paddingTop: '1.5rem', // Space for the floating label
+    boxSizing: 'border-box', // Include padding and border in total width and height
+  },
+  label: {
+    position: 'absolute',
+    top: '1rem',
+    left: '1rem',
+    fontSize: '1rem',
+    color: '#999',
+    transition: 'all 0.2s',
+    pointerEvents: 'none', // Prevents label from interfering with input focus
+  },
+  inputFocus: {
+    borderColor: '#007bff',
+  },
+  labelFocus: {
+    top: '-0.5rem',
+    left: '0.5rem',
+    fontSize: '0.75rem',
+    color: '#007bff',
+  },
+  placeholder: {
+    color: 'transparent',
+  },
+};
+
+interface FloatingLabelInputProps {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
+}
+
+const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
+  label,
+  name,
+  value,
+  onChange,
+}) => {
+  const [isFocused, setIsFocused] = useState<boolean>(false);
+
+  const handleFocus = () => setIsFocused(true);
+  const handleBlur = () => setIsFocused(value.length > 0); // Keep label floating if there's text
+
+  return (
+    <div style={styles.formGroup}>
+      <input
+        type="text"
+        name={name}
+        id={name}
+        value={value}
+        onChange={onChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        placeholder=" " // Placeholder needed for floating effect
+        required
+        style={{
+          ...styles.input,
+          ...(isFocused || value.length > 0 ? styles.inputFocus : {}),
+        }}
+      />
+      <label
+        htmlFor={name}
+        style={{
+          ...styles.label,
+          ...(isFocused || value.length > 0 ? styles.labelFocus : {}),
+        }}
+      >
+        {label}
+      </label>
+    </div>
+  );
+};
+
+const App: React.FC = () => {
+  const [inputValue, setInputValue] = useState<string>('');
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+  };
+
+  return (
+    <div style={{ padding: '2rem' }}>
+      <FloatingLabelInput
+        label="Application Name"
+        name="applicationName"
+        value={inputValue}
+        onChange={handleInputChange}
+      />
+    </div>
+  );
+};
+
+export default App;
