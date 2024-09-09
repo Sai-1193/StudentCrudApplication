@@ -1,0 +1,312 @@
+import React, { useState } from 'react';
+import { Box, Grid, Button, Modal, TextField } from '@mui/material';
+import CollapsibleFormSection from './CollapsibleFormSection'; // Assuming you have this component
+
+interface Auth {
+  type: string;
+  username: string;
+  password: string;
+  token: string;
+}
+
+interface HeaderVar {
+  key: string;
+  value: string;
+}
+
+interface PreReqVar {
+  key?: string;
+}
+
+interface BodyVar {
+  path: string;
+  type?: string;
+  values?: string;
+}
+
+interface Test {
+  testName: string;
+  api: string;
+  method: string;
+  request: {
+    auth: Auth;
+    headers: {
+      pre_header_var: PreReqVar[];
+      required: HeaderVar[];
+    };
+    body: {
+      pre_request_var: PreReqVar[];
+      required: BodyVar[];
+    };
+  };
+  response: {
+    headers: {
+      key: string;
+      value: string;
+    }[];
+  };
+  expect: {
+    statusCode: number | number[];
+    required: string[];
+  };
+}
+
+interface Service {
+  serviceName: string;
+  tests: Test[];
+}
+
+interface Variable {
+  key: string;
+  value: string;
+}
+
+interface FormState {
+  applicationName: string;
+  fileCount: number;
+  fileSequence: number;
+  requestFile: string;
+  services: Service[];
+  variables: Variable[];
+}
+
+const FormWithYamlView: React.FC = () => {
+  const [formState, setFormState] = useState<FormState>({
+    applicationName: '',
+    fileCount: 1,
+    fileSequence: 1,
+    requestFile: 'ecm_request_1.yml',
+    services: [],
+    variables: []
+  });
+
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [currentServiceIndex, setCurrentServiceIndex] = useState<number | null>(null);
+
+  const [test, setTest] = useState<Test>({
+    testName: '',
+    api: '',
+    method: 'GET',
+    request: {
+      auth: {
+        type: 'Bearer Token',
+        username: '',
+        password: '',
+        token: ''
+      },
+      headers: {
+        pre_header_var: [],
+        required: []
+      },
+      body: {
+        pre_request_var: [],
+        required: []
+      }
+    },
+    response: {
+      headers: []
+    },
+    expect: {
+      statusCode: 200,
+      required: []
+    }
+  });
+
+  const openModal = (index: number | null = null, serviceIndex: number | null = null) => {
+    setEditingIndex(index);
+    setCurrentServiceIndex(serviceIndex);
+    if (index !== null && serviceIndex !== null) {
+      const selectedTest = formState.services[serviceIndex].tests[index];
+      setTest(selectedTest);
+    } else {
+      setTest({
+        testName: '',
+        api: '',
+        method: 'GET',
+        request: {
+          auth: {
+            type: 'Bearer Token',
+            username: '',
+            password: '',
+            token: ''
+          },
+          headers: {
+            pre_header_var: [],
+            required: []
+          },
+          body: {
+            pre_request_var: [],
+            required: []
+          }
+        },
+        response: {
+          headers: []
+        },
+        expect: {
+          statusCode: 200,
+          required: []
+        }
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingIndex(null);
+    setCurrentServiceIndex(null);
+  };
+
+  const handleTestChange = (field: string, value: any) => {
+    setTest({ ...test, [field]: value });
+  };
+
+  const handleSave = () => {
+    if (currentServiceIndex !== null) {
+      const updatedServices = [...formState.services];
+      if (editingIndex !== null) {
+        updatedServices[currentServiceIndex].tests[editingIndex] = test;
+      } else {
+        updatedServices[currentServiceIndex].tests.push(test);
+      }
+      setFormState({ ...formState, services: updatedServices });
+    }
+    closeModal();
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormState({ ...formState, [e.target.name]: e.target.value });
+  };
+
+  const handleServiceChange = (index: number, value: string) => {
+    const updatedServices = [...formState.services];
+    updatedServices[index].serviceName = value;
+    setFormState({ ...formState, services: updatedServices });
+  };
+
+  const addTest = (serviceIndex: number) => {
+    openModal(null, serviceIndex);
+  };
+
+  return (
+    <Box sx={{ width: '100%', p: 1, border: '1px solid #ddd' }}>
+      <Grid container spacing={2}>
+        <Grid item xs={6}>
+          {/* {Display edited YAML here} */}
+          {/* Implement YAML editor component if needed */}
+        </Grid>
+        <Grid item xs={6}>
+          <Box sx={{ p: 2, border: 'none', borderRadius: '4px' }}>
+            <CollapsibleFormSection title="Application" description="Enter PIV onboarding application details" descriptionSx={{ paddingRight: '28%' }}>
+              <Box>
+                <Box sx={{ paddingLeft: '19%' }}>
+                  <label>Application Name</label>
+                </Box>
+                <Box sx={{ paddingLeft: '19%' }}>
+                  <TextField
+                    name="applicationName"
+                    value={formState.applicationName}
+                    onChange={handleChange}
+                    variant="standard"
+                    fullWidth
+                  />
+                </Box>
+              </Box>
+            </CollapsibleFormSection>
+          </Box>
+
+          <CollapsibleFormSection title="Services" description="Enter Service details" descriptionSx={{ paddingRight: '48%' }}>
+            {formState.services.map((service, serviceIndex) => (
+              <Box key={serviceIndex} sx={{ mb: 2 }}>
+                <Box sx={{ paddingLeft: '19%' }}>
+                  <label>Service Name</label>
+                </Box>
+                <Box sx={{ paddingLeft: '19%' }}>
+                  <TextField
+                    name="serviceName"
+                    value={service.serviceName}
+                    onChange={(e) => handleServiceChange(serviceIndex, e.target.value)}
+                    variant="standard"
+                    fullWidth
+                  />
+                </Box>
+                {service.tests.map((test, testIndex) => (
+                  <Box key={testIndex} sx={{ paddingLeft: '17%', paddingTop: 3 }}>
+                    <CollapsibleFormSection title="Tests" description="Enter Tests details" descriptionSx={{ paddingRight: '53%' }}>
+                      <Box sx={{ paddingLeft: '10%', paddingTop: 7 }}>
+                        <Button
+                          onClick={() => addTest(serviceIndex)}
+                          variant="contained"
+                          color="primary"
+                        >
+                          ADD TEST
+                        </Button>
+                        {service.tests.map((test, index) => (
+                          <Box key={index}>
+                            <h4>{test.testName}</h4>
+                            <Button onClick={() => openModal(index, serviceIndex)} variant="outlined" color="primary">
+                              Edit
+                            </Button>
+                          </Box>
+                        ))}
+                      </Box>
+                    </CollapsibleFormSection>
+                  </Box>
+                ))}
+              </Box>
+            ))}
+          </CollapsibleFormSection>
+        </Grid>
+      </Grid>
+
+      <Modal
+        open={isModalOpen}
+        onClose={closeModal}
+        aria-labelledby="modal-title"
+        aria-describedby="modal-description"
+      >
+        <Box sx={{ p: 2, width: '500px', margin: 'auto', backgroundColor: 'white', borderRadius: '4px' }}>
+          <h2 id="modal-title">{editingIndex !== null ? 'Edit Test' : 'Add Test'}</h2>
+          <Box sx={{ p: 1 }}>
+            <TextField
+              label="Test Name"
+              value={test.testName}
+              onChange={(e) => handleTestChange('testName', e.target.value)}
+              fullWidth
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="API"
+              value={test.api}
+              onChange={(e) => handleTestChange('api', e.target.value)}
+              fullWidth
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              label="Method"
+              select
+              value={test.method}
+              onChange={(e) => handleTestChange('method', e.target.value)}
+              fullWidth
+              sx={{ mb: 2 }}
+              SelectProps={{
+                native: true,
+              }}
+            >
+              <option value="GET">GET</option>
+              <option value="POST">POST</option>
+              <option value="PUT">PUT</option>
+              <option value="DELETE">DELETE</option>
+            </TextField>
+            {/* Add additional fields for headers and bodyVars if needed */}
+            <Button onClick={handleSave} variant="contained" color="primary">Save</Button>
+            <Button onClick={closeModal} variant="outlined" color="secondary" sx={{ ml: 2 }}>Cancel</Button>
+          </Box>
+        </Box>
+      </Modal>
+    </Box>
+  );
+};
+
+export default FormWithYamlView;
