@@ -132,3 +132,58 @@ const YamlEditor: React.FC = () => {
 };
 
 export default YamlEditor;
+
+
+
+import React from 'react';
+import { Box, Button } from '@mui/material'; // Assuming you're using Material-UI
+import IconEdit from '@mui/icons-material/Edit'; // Import your icon
+
+interface Test {
+  testName: string;
+}
+
+interface Props {
+  test: Test;
+  testIndex: number;
+  openModalForEdit: (serviceIndex: number, testIndex: number) => void;
+}
+
+const MyComponent: React.FC<Props> = ({ test, testIndex, openModalForEdit }) => {
+  return (
+    <Box
+      display="flex"
+      alignItems="center"
+      justifyContent="space-between"
+      sx={{
+        borderBottom: '1px solid #e8e8e8',
+        borderLeft: '1px solid #e8e8e8',
+        borderRight: '1px solid #e8e8e8',
+        borderRadius: '4px',
+        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+        padding: '8px', // Optional padding for better spacing
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
+        <Button
+          style={{ marginLeft: '10px' }} // Adjust the margin as needed
+          onClick={() => openModalForEdit(testIndex, testIndex)}
+        >
+          <IconEdit title="Example icon" titleId="example-icon-id" />
+        </Button>
+        <h4 style={{ margin: 0, marginLeft: '10px' }}>{test.testName}</h4>
+      </div>
+    </Box>
+  );
+};
+
+export default MyComponent;
+
+
+
+
