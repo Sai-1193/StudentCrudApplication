@@ -107,3 +107,320 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+import React, { useState } from 'react';
+
+// Define the types
+interface Auth {
+  type: string;
+  username?: string;
+  password?: string;
+  token?: string;
+}
+
+interface HeaderVar {
+  key: string;
+  value: string;
+}
+
+interface PreReqVar {
+  key?: string[];
+}
+
+interface Test {
+  testName: string;
+  api: string;
+  auth: Auth;
+  headers: {
+    pre_header_var: PreReqVar[];
+    required: HeaderVar[];
+  };
+}
+
+interface Service {
+  ServiceName: string;
+  tests: Test[];
+}
+
+interface FormState {
+  AppName: string;
+  Services: Service[];
+}
+
+// Initial form state (adjust as needed)
+const initialFormState: FormState = {
+  AppName: '',
+  Services: []
+};
+
+const App: React.FC = () => {
+  const [formState, setFormState] = useState<FormState>(initialFormState);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [currentServiceIndex, setCurrentServiceIndex] = useState<number | null>(null);
+  const [currentTestIndex, setCurrentTestIndex] = useState<number | null>(null);
+  const [testName, setTestName] = useState<string>("");
+  const [api, setApi] = useState<string>("");
+  const [authType, setAuthType] = useState<string>("");
+  const [username, setUsername] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [token, setToken] = useState<string>("");
+  const [preHeaderVars, setPreHeaderVars] = useState<PreReqVar[]>([]);
+  const [requiredHeaders, setRequiredHeaders] = useState<HeaderVar[]>([]);
+
+  const addTest = () => {
+    if (currentServiceIndex !== null) {
+      const newTest: Test = {
+        testName,
+        api,
+        auth: { type: authType, username, password, token },
+        headers: {
+          pre_header_var: preHeaderVars,
+          required: requiredHeaders
+        }
+      };
+
+      setFormState(prevState => {
+        const updatedServices = [...prevState.Services];
+        updatedServices[currentServiceIndex] = {
+          ...updatedServices[currentServiceIndex],
+          tests: [...updatedServices[currentServiceIndex].tests, newTest]
+        };
+        return { ...prevState, Services: updatedServices };
+      });
+
+      // Reset input fields
+      setTestName("");
+      setApi("");
+      setAuthType("");
+      setUsername("");
+      setPassword("");
+      setToken("");
+      setPreHeaderVars([]);
+      setRequiredHeaders([]);
+
+      // Close the modal
+      setIsModalOpen(false);
+    }
+  };
+
+  const saveTest = () => {
+    if (currentServiceIndex !== null) {
+      const updatedServices = [...formState.Services];
+
+      if (currentTestIndex === null) {
+        // Adding new test
+        const newTest: Test = {
+          testName,
+          api,
+          auth: { type: authType, username, password, token },
+          headers: {
+            pre_header_var: preHeaderVars,
+            required: requiredHeaders
+          }
+        };
+        updatedServices[currentServiceIndex] = {
+          ...updatedServices[currentServiceIndex],
+          tests: [...updatedServices[currentServiceIndex].tests, newTest]
+        };
+      } else {
+        // Editing existing test
+        const updatedTest: Test = {
+          testName,
+          api,
+          auth: { type: authType, username, password, token },
+          headers: {
+            pre_header_var: preHeaderVars,
+            required: requiredHeaders
+          }
+        };
+        updatedServices[currentServiceIndex] = {
+          ...updatedServices[currentServiceIndex],
+          tests: updatedServices[currentServiceIndex].tests.map((test, index) =>
+            index === currentTestIndex ? updatedTest : test
+          )
+        };
+      }
+
+      setFormState({ ...formState, Services: updatedServices });
+
+      // Reset input fields and close the modal
+      setTestName("");
+      setApi("");
+      setAuthType("");
+      setUsername("");
+      setPassword("");
+      setToken("");
+      setPreHeaderVars([]);
+      setRequiredHeaders([]);
+      setIsModalOpen(false);
+    }
+  };
+
+  const openModalForAdd = (index: number) => {
+    setCurrentServiceIndex(index);
+    setCurrentTestIndex(null);
+    setTestName("");
+    setApi("");
+    setAuthType("");
+    setUsername("");
+    setPassword("");
+    setToken("");
+    setPreHeaderVars([]);
+    setRequiredHeaders([]);
+    setIsModalOpen(true);
+  };
+
+  const openModalForEdit = (serviceIndex: number, testIndex: number) => {
+    const test = formState.Services[serviceIndex].tests[testIndex];
+    setCurrentServiceIndex(serviceIndex);
+    setCurrentTestIndex(testIndex);
+    setTestName(test.testName);
+    setApi(test.api);
+    setAuthType(test.auth.type);
+    setUsername(test.auth.username || "");
+    setPassword(test.auth.password || "");
+    setToken(test.auth.token || "");
+    setPreHeaderVars(test.headers.pre_header_var);
+    setRequiredHeaders(test.headers.required);
+    setIsModalOpen(true);
+  };
+
+  const handlePreHeaderChange = (index: number, key: string | undefined) => {
+    const updatedPreHeaderVars = [...preHeaderVars];
+    if (key) {
+      updatedPreHeaderVars[index] = { key: [key] };
+    } else {
+      updatedPreHeaderVars[index] = { key: [] };
+    }
+    setPreHeaderVars(updatedPreHeaderVars);
+  };
+
+  const handleRequiredHeaderChange = (index: number, key: string, value: string) => {
+    const updatedRequiredHeaders = [...requiredHeaders];
+    updatedRequiredHeaders[index] = { key, value };
+    setRequiredHeaders(updatedRequiredHeaders);
+  };
+
+  const addPreHeaderVar = () => {
+    setPreHeaderVars([...preHeaderVars, { key: [] }]);
+  };
+
+  const removePreHeaderVar = (index: number) => {
+    setPreHeaderVars(preHeaderVars.filter((_, i) => i !== index));
+  };
+
+  const addRequiredHeader = () => {
+    setRequiredHeaders([...requiredHeaders, { key: "", value: "" }]);
+  };
+
+  const removeRequiredHeader = (index: number) => {
+    setRequiredHeaders(requiredHeaders.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div>
+      <h1>Application: {formState.AppName}</h1>
+      {formState.Services.map((service, index) => (
+        <div key={index}>
+          <h2>Service: {service.ServiceName}</h2>
+          <button onClick={() => openModalForAdd(index)}>Add Test</button>
+          <ul>
+            {service.tests.map((test, testIndex) => (
+              <li key={testIndex}>
+                {test.testName} - {test.api}
+                <button onClick={() => openModalForEdit(index, testIndex)}>Edit</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+
+      {isModalOpen && (
+        <div className="modal">
+          <h2>{currentTestIndex === null ? "Add Test" : "Edit Test"}</h2>
+          <label>
+            Test Name:
+            <input type="text" value={testName} onChange={e => setTestName(e.target.value)} />
+          </label>
+          <label>
+            API:
+            <input type="text" value={api} onChange={e => setApi(e.target.value)} />
+          </label>
+          <label>
+            Authentication Type:
+            <select value={authType} onChange={e => setAuthType(e.target.value)}>
+              <option value="">Select Auth Type</option>
+              <option value="basic">Basic</option>
+              <option value="bearer">Bearer</option>
+            </select>
+          </label>
+          {authType === "basic" && (
+            <>
+              <label>
+                Username:
+                <input type="text" value={username} onChange={e => setUsername(e.target.value)} />
+              </label>
+              <label>
+                Password:
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
+              </label>
+            </>
+          )}
+          {authType === "bearer" && (
+            <label>
+              Token:
+              <input type="text" value={token} onChange={e => setToken(e.target.value)} />
+            </label>
+          )}
+          <div>
+            <h3>Pre-Header Variables:</h3>
+            {preHeaderVars.map((preHeader, index) => (
+              <div key={index}>
+                <label>
+                  Key:
+                  <input
+                    type="text"
+                    value={preHeader.key?.[0] || ""}
+                    onChange={e => handlePreHeaderChange(index, e.target.value)}
+                  />
+                </label>
+                <button type="button" onClick={() => removePreHeaderVar(index)}>Remove</button>
+              </div>
+            ))}
+            <button type="button" onClick={addPreHeaderVar}>Add Pre-Header Variable</button>
+          </div>
+          <div>
+            <h3>Required Headers:</h3>
+            {requiredHeaders.map((header, index) => (
+              <div key={index}>
+                <label>
+                  Key:
+                  <input
+                    type="text"
+                    value={header.key}
+                    onChange={e => handleRequiredHeaderChange(index, e.target.value, header.value)}
+                  />
+                </label>
+                <label>
+                  Value:
+                  <input
+                    type="text"
+                    value={header.value}
+                    onChange={e => handleRequiredHeaderChange(index, header.key, e.target.value)}
+                  />
+                </label>
+                <button type="button" onClick={() => removeRequiredHeader(index)}>Remove</button>
+              </div>
+            ))}
+            <button type="button" onClick={addRequiredHeader}>Add Required Header</button>
+          </div>
+          <button onClick={saveTest}>Save</button>
+          <button onClick={() => setIsModalOpen(false)}>Cancel</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default App;
+
