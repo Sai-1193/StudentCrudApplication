@@ -127,3 +127,143 @@ return (
 );
 
 
+
+
+
+
+
+const [authType, setAuthType] = useState<string>("");
+const [username, setUsername] = useState<string>("");
+const [password, setPassword] = useState<string>("");
+const [token, setToken] = useState<string>("");
+
+const addTest = () => {
+  if (currentServiceIndex !== null) {
+    const newTest: Test = { 
+      testName, 
+      api, 
+      auth: { type: authType, username, password, token } 
+    };
+    
+    setFormState(prevState => {
+      const updatedServices = [...prevState.Services];
+      updatedServices[currentServiceIndex] = {
+        ...updatedServices[currentServiceIndex],
+        tests: [...updatedServices[currentServiceIndex].tests, newTest]
+      };
+      return { ...prevState, Services: updatedServices };
+    });
+
+    // Reset input fields
+    setTestName("");
+    setApi("");
+    setAuthType("");
+    setUsername("");
+    setPassword("");
+    setToken("");
+
+    // Close the modal
+    setIsModalOpen(false);
+  }
+};
+
+const saveTest = () => {
+  if (currentServiceIndex !== null) {
+    const updatedServices = [...formState.Services];
+
+    if (currentTestIndex === null) {
+      // Adding new test
+      const newTest: Test = { 
+        testName, 
+        api, 
+        auth: { type: authType, username, password, token } 
+      };
+      updatedServices[currentServiceIndex] = {
+        ...updatedServices[currentServiceIndex],
+        tests: [...updatedServices[currentServiceIndex].tests, newTest]
+      };
+    } else {
+      // Editing existing test
+      const updatedTest: Test = { 
+        testName, 
+        api, 
+        auth: { type: authType, username, password, token } 
+      };
+      updatedServices[currentServiceIndex] = {
+        ...updatedServices[currentServiceIndex],
+        tests: updatedServices[currentServiceIndex].tests.map((test, index) =>
+          index === currentTestIndex ? updatedTest : test
+        )
+      };
+    }
+
+    setFormState({ ...formState, Services: updatedServices });
+
+    // Reset input fields and close the modal
+    setTestName("");
+    setApi("");
+    setAuthType("");
+    setUsername("");
+    setPassword("");
+    setToken("");
+    setIsModalOpen(false);
+  }
+};
+
+
+const openModalForEdit = (serviceIndex: number, testIndex: number) => {
+  const test = formState.Services[serviceIndex].tests[testIndex];
+  setCurrentServiceIndex(serviceIndex);
+  setCurrentTestIndex(testIndex);
+  setTestName(test.testName);
+  setApi(test.api);
+  setAuthType(test.auth.type);
+  setUsername(test.auth.username || "");
+  setPassword(test.auth.password || "");
+  setToken(test.auth.token || "");
+  setIsModalOpen(true);
+};
+
+{isModalOpen && (
+  <div className="modal">
+    <h2>{currentTestIndex === null ? "Add Test" : "Edit Test"}</h2>
+    <label>
+      Test Name:
+      <input type="text" value={testName} onChange={e => setTestName(e.target.value)} />
+    </label>
+    <label>
+      API:
+      <input type="text" value={api} onChange={e => setApi(e.target.value)} />
+    </label>
+    <label>
+      Authentication Type:
+      <select value={authType} onChange={e => setAuthType(e.target.value)}>
+        <option value="">Select Auth Type</option>
+        <option value="basic">Basic</option>
+        <option value="bearer">Bearer</option>
+      </select>
+    </label>
+    {authType === "basic" && (
+      <>
+        <label>
+          Username:
+          <input type="text" value={username} onChange={e => setUsername(e.target.value)} />
+        </label>
+        <label>
+          Password:
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} />
+        </label>
+      </>
+    )}
+    {authType === "bearer" && (
+      <label>
+        Token:
+        <input type="text" value={token} onChange={e => setToken(e.target.value)} />
+      </label>
+    )}
+    <button onClick={saveTest}>Save</button>
+    <button onClick={() => setIsModalOpen(false)}>Cancel</button>
+  </div>
+)}
+
+
