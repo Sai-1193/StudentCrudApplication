@@ -1,0 +1,48 @@
+import React, { useState } from "react";
+import { Box, Typography, IconButton, Collapse, SxProps, Tooltip } from "@mui/material";
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import InfoIcon from '@mui/icons-material/Info'; // Assuming you're using Info icon from MUI
+
+interface CollapsibleFormSectionProps {
+  title: string;
+  titleSx?: SxProps;
+  description: string;
+  children: React.ReactNode;
+  descriptionSx?: SxProps;
+  expandIconSx?: SxProps;
+  initiallyOpen?: boolean; // New prop to control initial open state
+}
+
+const CollapsibleFormSection: React.FC<CollapsibleFormSectionProps> = ({
+  title,
+  description,
+  children,
+  initiallyOpen = false, // Default to false if not provided
+}) => {
+  const [open, setOpen] = useState(initiallyOpen);
+  
+  const handleToggle = () => {
+    setOpen(!open);
+  };
+
+  return (
+    <Box display="flex" flexDirection="column">
+      <Typography variant="h6">{title}</Typography>
+      <Box display="flex" alignItems="center">
+        <Tooltip title={description} arrow>
+          <IconButton>
+            <InfoIcon />
+          </IconButton>
+        </Tooltip>
+      </Box>
+      <IconButton onClick={handleToggle}>
+        <ExpandMoreIcon style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+      </IconButton>
+      <Collapse in={open}>
+        {children}
+      </Collapse>
+    </Box>
+  );
+};
+
+export default CollapsibleFormSection;
