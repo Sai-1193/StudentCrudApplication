@@ -46,3 +46,43 @@ const CollapsibleFormSection: React.FC<CollapsibleFormSectionProps> = ({
 };
 
 export default CollapsibleFormSection;
+
+
+
+
+import React from 'react';
+import CollapsibleFormSection from './CollapsibleFormSection';
+
+const MyComponent = () => {
+  return (
+    <div>
+      <CollapsibleFormSection
+        title="Application"
+        description="This is the description for the Application section."
+        initiallyOpen={true} // Opens by default
+      >
+        {/* Application fields go here */}
+      </CollapsibleFormSection>
+
+      <CollapsibleFormSection
+        title="Service"
+        description="This is the description for the Service section."
+        initiallyOpen={true} // Opens by default
+      >
+        {/* Service fields go here */}
+      </CollapsibleFormSection>
+
+      <CollapsibleFormSection
+        title="Variable"
+        description="This is the description for the Variable section."
+        initiallyOpen={false} // Closed by default
+      >
+        {/* Variable fields go here */}
+      </CollapsibleFormSection>
+    </div>
+  );
+};
+
+export default MyComponent;
+
+
