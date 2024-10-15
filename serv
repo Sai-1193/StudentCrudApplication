@@ -511,3 +511,59 @@ const FormWithYamlView: React.FC = () => {
                 </ModalFooter>
             </
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const saveService = () => {
+    const updatedServices = [...formState.services];
+
+    if (currentServiceIndex === null) {
+        // Adding new service
+        const newService: Service = {
+            serviceName: newServiceName,
+            tests: [], // Start with an empty array of tests
+        };
+        updatedServices.push(newService);
+    } else {
+        // Editing existing service
+        updatedServices[currentServiceIndex] = {
+            ...updatedServices[currentServiceIndex],
+            serviceName: newServiceName,
+        };
+    }
+
+    // Update the form state and YAML string
+    setFormState({ services: updatedServices });
+    updateYamlString({ ...formState, services: updatedServices });
+
+    // Reset input fields and close the modal
+    resetServiceFields();
+};
+
+const openModalForEditService = (serviceIndex: number) => {
+    const service = formState.services[serviceIndex];
+    setCurrentServiceIndex(serviceIndex);
+    setNewServiceName(service.serviceName); // Set current service name
+    setIsModalOpen(true); // Open the modal for editing
+};
+
+
