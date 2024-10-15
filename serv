@@ -1,116 +1,83 @@
-import React, { useState } from "react";
-import { Box, Button, Modal, IconButton, Grid } from "@mui/material";
-import { IconEdit, IconTrash } from '@mui/icons-material';
+import React, { useEffect, useState } from "react";
+import { Grid, Box, Button, Modal, ModalHeader, ModalBody, ModalFooter, IconButton } from "@mui/material";
+import YAML from "js-yaml";
 
-const ServiceManager = () => {
-  const [services, setServices] = useState([]);
-  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
-  const [currentServiceIndex, setCurrentServiceIndex] = useState(null);
-  const [newServiceName, setNewServiceName] = useState("");
-  const [tests, setTests] = useState([]);
-  const [testName, setTestName] = useState("");
+interface Test {
+    testName: string;
+    api: string;
+    method: string;
+    // Define other properties as needed
+}
 
-  const handleOpenServiceModal = (index = null) => {
-    setCurrentServiceIndex(index);
-    setNewServiceName(index !== null ? services[index].serviceName : "");
-    setTests(index !== null ? services[index].tests : []);
-    setIsServiceModalOpen(true);
-  };
+interface Service {
+    serviceName: string;
+    tests: Test[];
+}
 
-  const handleSaveService = () => {
-    const updatedServices = [...services];
-    if (currentServiceIndex !== null) {
-      updatedServices[currentServiceIndex] = {
-        ...updatedServices[currentServiceIndex],
-        serviceName: newServiceName,
-        tests,
-      };
-    } else {
-      updatedServices.push({ serviceName: newServiceName, tests });
-    }
-    setServices(updatedServices);
-    closeServiceModal();
-  };
+interface FormState {
+    services: Service[];
+}
 
-  const closeServiceModal = () => {
-    setIsServiceModalOpen(false);
-    setNewServiceName("");
-    setTests([]);
-    setCurrentServiceIndex(null);
-  };
+const FormWithYamlView: React.FC = () => {
+    const [formState, setFormState] = useState<FormState>({ services: [] });
+    const [newServiceName, setNewServiceName] = useState<string>("");
+    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const [yamlStr, setYamlStr] = useState<string>("");
 
-  const handleDeleteService = (index) => {
-    setServices(services.filter((_, i) => i !== index));
-  };
+    useEffect(() => {
+        updateYamlString(formState);
+    }, [formState]);
 
-  const handleAddTest = () => {
-    setTests([...tests, { testName }]);
-    setTestName("");
-  };
+    const updateYamlString = (state: FormState) => {
+        const yamlString = YAML.dump(state);
+        setYamlStr(yamlString);
+    };
 
-  const handleDeleteTest = (testIndex) => {
-    setTests(tests.filter((_, i) => i !== testIndex));
-  };
+    const addService = () => {
+        const newService: Service = {
+            serviceName: newServiceName,
+            tests: [] // Initialize with an empty array of tests
+        };
+        setFormState((prev) => ({
+            services: [...prev.services, newService]
+        }));
+        setNewServiceName("");
+        setIsModalOpen(false);
+    };
 
-  return (
-    <Box>
-      <Button onClick={() => handleOpenServiceModal()}>Add Service</Button>
-      <Grid container spacing={2}>
-        {services.map((service, index) => (
-          <Grid item xs={12} key={index}>
-            <Box display="flex" justifyContent="space-between">
-              <h4>{service.serviceName}</h4>
-              <div>
-                <IconButton onClick={() => handleOpenServiceModal(index)}>
-                  <IconEdit />
-                </IconButton>
-                <IconButton onClick={() => handleDeleteService(index)}>
-                  <IconTrash />
-                </IconButton>
-              </div>
-            </Box>
-            {service.tests.map((test, testIndex) => (
-              <Box key={testIndex} display="flex" justifyContent="space-between">
-                <p>{test.testName}</p>
-                <IconButton onClick={() => handleDeleteTest(testIndex)}>
-                  <IconTrash />
-                </IconButton>
-              </Box>
-            ))}
-          </Grid>
-        ))}
-      </Grid>
-
-      <Modal open={isServiceModalOpen} onClose={closeServiceModal}>
-        <Box p={2}>
-          <h2>{currentServiceIndex !== null ? "Edit Service" : "Add Service"}</h2>
-          <input
-            value={newServiceName}
-            onChange={(e) => setNewServiceName(e.target.value)}
-            placeholder="Service Name"
-          />
-          <div>
-            <h3>Tests</h3>
-            {tests.map((test, index) => (
-              <Box key={index} display="flex" justifyContent="space-between">
-                <p>{test.testName}</p>
-                <IconButton onClick={() => handleDeleteTest(index)}>
-                  <IconTrash />
-                </IconButton>
-              </Box>
-            ))}
-            <input
-              value={testName}
-              onChange={(e) => setTestName(e.target.value)}
-              placeholder="Test Name"
-            />
-            <Button onClick={handleAddTest}>Add Test</Button>
-          </div>
-          <Button onClick={handleSaveService}>Save</Button>
+    return (
+        <Box sx={{ width: "100%" }}>
+            <Grid container spacing={2}>
+                <Grid item xs={6}>
+                    <Button onClick={() => setIsModalOpen(true)}>Add Service</Button>
+                    {formState.services.map((service, index) => (
+                        <Box key={index} sx={{ borderBottom: "1px solid #e8e8e8", padding: 2 }}>
+                            <h4>{service.serviceName}</h4>
+                            <IconButton onClick={() => {/* Edit Service logic */}}>Edit</IconButton>
+                            <IconButton onClick={() => {/* Delete Service logic */}}>Delete</IconButton>
+                        </Box>
+                    ))}
+                </Grid>
+                <Grid item xs={6}>
+                    <pre>{yamlStr}</pre>
+                </Grid>
+            </Grid>
+            <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)}>
+                <ModalHeader>Add Service</ModalHeader>
+                <ModalBody>
+                    <input
+                        value={newServiceName}
+                        onChange={(e) => setNewServiceName(e.target.value)}
+                        placeholder="Service Name"
+                    />
+                </ModalBody>
+                <ModalFooter>
+                    <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                    <Button onClick={addService}>Add</Button>
+                </ModalFooter>
+            </Modal>
         </Box>
-      </Modal>
-    </Box>
-  );
+    );
 };
 
-export default ServiceManager;
+export default FormWithYamlView;
