@@ -567,3 +567,66 @@ const openModalForEditService = (serviceIndex: number) => {
 };
 
 
+const saveService = () => {
+    const updatedServices = [...formState.services];
+
+    if (currentServiceIndex === null) {
+        // Adding new service
+        const newService: Service = {
+            serviceName: newServiceName,
+            tests: [
+                {
+                    testName: "", // Initialize with empty fields
+                    api: "",
+                    method: "",
+                    request: {
+                        auth: {
+                            type: "",
+                            username: "",
+                            password: "",
+                            token: "",
+                        },
+                        headers: {
+                            pre_header_var: "",
+                            required: [],
+                        },
+                        body: {
+                            pre_request_var: "",
+                            required: [],
+                        },
+                    },
+                    response: {
+                        headers: {
+                            required: [],
+                        },
+                        expect: {
+                            statusCode: [],
+                        },
+                    },
+                },
+            ], // Start with one empty test
+        };
+        updatedServices.push(newService);
+    } else {
+        // Editing existing service
+        updatedServices[currentServiceIndex] = {
+            ...updatedServices[currentServiceIndex],
+            serviceName: newServiceName,
+            // Optionally update tests if needed
+        };
+    }
+
+    // Update the form state and YAML string
+    setFormState({ services: updatedServices });
+    updateYamlString({ ...formState, services: updatedServices });
+
+    // Reset input fields and close the modal
+    resetServiceFields();
+};
+
+const openModalForEditService = (serviceIndex: number) => {
+    const service = formState.services[serviceIndex];
+    setCurrentServiceIndex(serviceIndex);
+    setNewServiceName(service.serviceName); // Set current service name
+    setIsModalOpen(true); // Open the modal for editing
+};
