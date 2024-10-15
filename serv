@@ -1,0 +1,116 @@
+import React, { useState } from "react";
+import { Box, Button, Modal, IconButton, Grid } from "@mui/material";
+import { IconEdit, IconTrash } from '@mui/icons-material';
+
+const ServiceManager = () => {
+  const [services, setServices] = useState([]);
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+  const [currentServiceIndex, setCurrentServiceIndex] = useState(null);
+  const [newServiceName, setNewServiceName] = useState("");
+  const [tests, setTests] = useState([]);
+  const [testName, setTestName] = useState("");
+
+  const handleOpenServiceModal = (index = null) => {
+    setCurrentServiceIndex(index);
+    setNewServiceName(index !== null ? services[index].serviceName : "");
+    setTests(index !== null ? services[index].tests : []);
+    setIsServiceModalOpen(true);
+  };
+
+  const handleSaveService = () => {
+    const updatedServices = [...services];
+    if (currentServiceIndex !== null) {
+      updatedServices[currentServiceIndex] = {
+        ...updatedServices[currentServiceIndex],
+        serviceName: newServiceName,
+        tests,
+      };
+    } else {
+      updatedServices.push({ serviceName: newServiceName, tests });
+    }
+    setServices(updatedServices);
+    closeServiceModal();
+  };
+
+  const closeServiceModal = () => {
+    setIsServiceModalOpen(false);
+    setNewServiceName("");
+    setTests([]);
+    setCurrentServiceIndex(null);
+  };
+
+  const handleDeleteService = (index) => {
+    setServices(services.filter((_, i) => i !== index));
+  };
+
+  const handleAddTest = () => {
+    setTests([...tests, { testName }]);
+    setTestName("");
+  };
+
+  const handleDeleteTest = (testIndex) => {
+    setTests(tests.filter((_, i) => i !== testIndex));
+  };
+
+  return (
+    <Box>
+      <Button onClick={() => handleOpenServiceModal()}>Add Service</Button>
+      <Grid container spacing={2}>
+        {services.map((service, index) => (
+          <Grid item xs={12} key={index}>
+            <Box display="flex" justifyContent="space-between">
+              <h4>{service.serviceName}</h4>
+              <div>
+                <IconButton onClick={() => handleOpenServiceModal(index)}>
+                  <IconEdit />
+                </IconButton>
+                <IconButton onClick={() => handleDeleteService(index)}>
+                  <IconTrash />
+                </IconButton>
+              </div>
+            </Box>
+            {service.tests.map((test, testIndex) => (
+              <Box key={testIndex} display="flex" justifyContent="space-between">
+                <p>{test.testName}</p>
+                <IconButton onClick={() => handleDeleteTest(testIndex)}>
+                  <IconTrash />
+                </IconButton>
+              </Box>
+            ))}
+          </Grid>
+        ))}
+      </Grid>
+
+      <Modal open={isServiceModalOpen} onClose={closeServiceModal}>
+        <Box p={2}>
+          <h2>{currentServiceIndex !== null ? "Edit Service" : "Add Service"}</h2>
+          <input
+            value={newServiceName}
+            onChange={(e) => setNewServiceName(e.target.value)}
+            placeholder="Service Name"
+          />
+          <div>
+            <h3>Tests</h3>
+            {tests.map((test, index) => (
+              <Box key={index} display="flex" justifyContent="space-between">
+                <p>{test.testName}</p>
+                <IconButton onClick={() => handleDeleteTest(index)}>
+                  <IconTrash />
+                </IconButton>
+              </Box>
+            ))}
+            <input
+              value={testName}
+              onChange={(e) => setTestName(e.target.value)}
+              placeholder="Test Name"
+            />
+            <Button onClick={handleAddTest}>Add Test</Button>
+          </div>
+          <Button onClick={handleSaveService}>Save</Button>
+        </Box>
+      </Modal>
+    </Box>
+  );
+};
+
+export default ServiceManager;
