@@ -133,3 +133,227 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+
+
+val test
+
+
+import React, { useState } from 'react';
+import { Test, PreReqBodyVar, BodyVar } from './types';
+
+interface TestModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (test: Test) => void;
+}
+
+const TestModal: React.FC<TestModalProps> = ({ isOpen, onClose, onSave }) => {
+  const [testName, setTestName] = useState<string>('');
+  const [api, setApi] = useState<string>('');
+  const [method, setMethod] = useState<string>('GET');
+  const [preHeaderVars, setPreHeaderVars] = useState<string[]>([]);
+  const [requiredHeaders, setRequiredHeaders] = useState<string[]>([]);
+  const [preRequestVars, setPreRequestVars] = useState<PreReqBodyVar[]>([]);
+  const [requiredBodyFields, setRequiredBodyFields] = useState<BodyVar[]>([]);
+  const [requestBodyType, setRequestBodyType] = useState<string>('');
+  const [requestBody, setRequestBody] = useState<string>('');
+  const [errorMessages, setErrorMessages] = useState<string[]>([]);
+
+  const validateFields = (): boolean => {
+    const errors: string[] = [];
+    if (!testName) errors.push('Test Name is required.');
+    if (!api) errors.push('API is required.');
+    if (!requestBodyType) errors.push('Request Body Type is required.');
+    if (!requestBody) errors.push('Request Body is required.');
+
+    requiredBodyFields.forEach((field, index) => {
+      if (!field.path) errors.push(`Path is required for Body Field ${index + 1}.`);
+      if (!field.type) errors.push(`Type is required for Body Field ${index + 1}.`);
+    });
+
+    preRequestVars.forEach((varItem, index) => {
+      if (!varItem.key || varItem.key.length === 0) {
+        errors.push(`Key is required for Pre-Request Variable ${index + 1}.`);
+      }
+    });
+
+    setErrorMessages(errors);
+    return errors.length === 0;
+  };
+
+  const handleSave = () => {
+    if (!validateFields()) return;
+
+    const newTest: Test = {
+      testName,
+      api,
+      method,
+      request: {
+        auth: { type: '', username: '', password: '', token: '' },
+        headers: { pre_header_var: preHeaderVars, required: requiredHeaders },
+        body: {
+          pre_request_var: preRequestVars,
+          required_request_body_fields: requiredBodyFields,
+          request_body_type: requestBodyType,
+          request_body: requestBody,
+        },
+      },
+      response: { headers: { required: [] }, expect: { statusCode: [], required: [] } },
+    };
+    onSave(newTest);
+    onClose();
+  };
+
+  const addPreReqBodyVar = () => {
+    if (preRequestVars.some((varItem) => !varItem.key || varItem.key.length === 0)) {
+      alert('Please fill in all fields before adding a new Pre-Request Variable.');
+      return;
+    }
+    setPreRequestVars((prev) => [...prev, { key: [] }]);
+  };
+
+  const addBodyVar = () => {
+    if (requiredBodyFields.some((field) => !field.path || !field.type)) {
+      alert('Please fill in all fields before adding a new Body Field.');
+      return;
+    }
+    setRequiredBodyFields((prev) => [...prev, { path: '', type: '', values: [] }]);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal">
+      <h2>Add Test</h2>
+      {errorMessages.length > 0 && (
+        <div className="error-messages">
+          {errorMessages.map((msg, index) => (
+            <div key={index} className="error-message">
+              {msg}
+            </div>
+          ))}
+        </div>
+      )}
+      <div>
+        <label>Test Name:</label>
+        <input type="text" value={testName} onChange={(e) => setTestName(e.target.value)} />
+      </div>
+      <div>
+        <label>API:</label>
+        <input type="text" value={api} onChange={(e) => setApi(e.target.value)} />
+      </div>
+      <div>
+        <label>Method:</label>
+        <div>
+          {['GET', 'POST', 'PUT', 'DELETE'].map((m) => (
+            <label key={m}>
+              <input
+                type="radio"
+                value={m}
+                checked={method === m}
+                onChange={() => setMethod(m)}
+              />
+              {m}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <h3>Headers</h3>
+      <h4>Pre-Header Variables</h4>
+      {preHeaderVars.map((varName, index) => (
+        <div key={index}>
+          <input
+            type="text"
+            value={varName}
+            onChange={(e) => {
+              const updated = [...preHeaderVars];
+              updated[index] = e.target.value;
+              setPreHeaderVars(updated);
+            }}
+          />
+          <button onClick={() => setPreHeaderVars((prev) => prev.filter((_, i) => i !== index)))}>Delete</button>
+        </div>
+      ))}
+      <button onClick={() => setPreHeaderVars((prev) => [...prev, ''])}>Add Pre-Header Variable</button>
+
+      <h4>Required Headers</h4>
+      {requiredHeaders.map((header, index) => (
+        <div key={index}>
+          <input
+            type="text"
+            value={header}
+            onChange={(e) => {
+              const updated = [...requiredHeaders];
+              updated[index] = e.target.value;
+              setRequiredHeaders(updated);
+            }}
+          />
+          <button onClick={() => setRequiredHeaders((prev) => prev.filter((_, i) => i !== index)))}>Delete</button>
+        </div>
+      ))}
+      <button onClick={() => setRequiredHeaders((prev) => [...prev, ''])}>Add Required Header</button>
+
+      <h3>Body</h3>
+      <h4>Pre-Request Variables</h4>
+      {preRequestVars.map((varItem, index) => (
+        <div key={index}>
+          <input
+            type="text"
+            value={varItem.key}
+            onChange={(e) => {
+              const updated = [...preRequestVars];
+              updated[index].key = e.target.value;
+              setPreRequestVars(updated);
+            }}
+          />
+          <button onClick={() => setPreRequestVars((prev) => prev.filter((_, i) => i !== index)))}>Delete</button>
+        </div>
+      ))}
+      <button onClick={addPreReqBodyVar}>Add Pre-Request Variable</button>
+
+      <h4>Required Request Body Fields</h4>
+      {requiredBodyFields.map((field, index) => (
+        <div key={index}>
+          <input
+            type="text"
+            placeholder="Path"
+            value={field.path}
+            onChange={(e) => handleBodyVarChange(index, 'path', e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="Type"
+            value={field.type}
+            onChange={(e) => handleBodyVarChange(index, 'type', e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="Values (comma separated)"
+            value={field.values?.join(', ') || ''}
+            onChange={(e) => handleBodyVarChange(index, 'values', e.target.value.split(','))}
+          />
+          <button onClick={() => setRequiredBodyFields((prev) => prev.filter((_, i) => i !== index)))}>Delete</button>
+        </div>
+      ))}
+      <button onClick={addBodyVar}>Add Required Body Field</button>
+
+      <div>
+        <label>Request Body Type:</label>
+        <input type="text" value={requestBodyType} onChange={(e) => setRequestBodyType(e.target.value)} />
+      </div>
+      <div>
+        <label>Request Body:</label>
+        <textarea value={requestBody} onChange={(e) => setRequestBody(e.target.value)} />
+      </div>
+
+      <button onClick={handleSave}>Save</button>
+      <button onClick={onClose}>Cancel</button>
+    </div>
+  );
+};
+
+export default TestModal;
+
+
