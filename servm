@@ -1,0 +1,140 @@
+// ServicesManager.tsx
+import React, { useState } from "react";
+import { Service, Test } from "./types";
+
+const ServicesManager: React.FC = () => {
+  const [services, setServices] = useState<Service[]>([]);
+  const [expandedServiceIndex, setExpandedServiceIndex] = useState<number | null>(null);
+  const [editingServiceIndex, setEditingServiceIndex] = useState<number | null>(null);
+  const [newServiceName, setNewServiceName] = useState<string>("");
+  const [newTestName, setNewTestName] = useState<string>("");
+  const [newTestUrl, setNewTestUrl] = useState<string>("");
+
+  // Add a new service
+  const addService = () => {
+    const newService: Service = {
+      serviceName: newServiceName,
+      tests: []
+    };
+    setServices([...services, newService]);
+    setNewServiceName("");  // Clear input
+  };
+
+  // Add a new test to the selected service
+  const addTest = (serviceIndex: number) => {
+    const updatedServices = [...services];
+    const newTest: Test = { testName: newTestName, url: newTestUrl };
+    updatedServices[serviceIndex].tests.push(newTest);
+    setServices(updatedServices);
+    setNewTestName("");
+    setNewTestUrl("");
+  };
+
+  // Delete a test
+  const deleteTest = (serviceIndex: number, testIndex: number) => {
+    const updatedServices = [...services];
+    updatedServices[serviceIndex].tests.splice(testIndex, 1);
+    setServices(updatedServices);
+  };
+
+  // Toggle service expand/collapse
+  const toggleExpandService = (index: number) => {
+    setExpandedServiceIndex(expandedServiceIndex === index ? null : index);
+  };
+
+  // Set the service to edit mode
+  const toggleEditService = (index: number) => {
+    setEditingServiceIndex(index === editingServiceIndex ? null : index);
+  };
+
+  return (
+    <div>
+      <button onClick={() => addService()}>Add Service</button>
+      {services.map((service, serviceIndex) => (
+        <div key={serviceIndex}>
+          <div>
+            {expandedServiceIndex === serviceIndex ? (
+              <div>
+                {editingServiceIndex === serviceIndex ? (
+                  <div>
+                    <input
+                      type="text"
+                      value={service.serviceName}
+                      onChange={(e) =>
+                        setServices((prev) =>
+                          prev.map((s, i) =>
+                            i === serviceIndex
+                              ? { ...s, serviceName: e.target.value }
+                              : s
+                          )
+                        )
+                      }
+                    />
+                    <button onClick={() => toggleEditService(serviceIndex)}>
+                      Save Service
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <span>{service.serviceName}</span>
+                    <button onClick={() => toggleEditService(serviceIndex)}>Edit</button>
+                    <button
+                      onClick={() => {
+                        setServices(services.filter((_, i) => i !== serviceIndex));
+                        setExpandedServiceIndex(null);
+                      }}
+                    >
+                      Delete Service
+                    </button>
+                  </div>
+                )}
+
+                {/* Test Section */}
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Test Name"
+                    value={newTestName}
+                    onChange={(e) => setNewTestName(e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Test URL"
+                    value={newTestUrl}
+                    onChange={(e) => setNewTestUrl(e.target.value)}
+                  />
+                  <button onClick={() => addTest(serviceIndex)}>Add Test</button>
+
+                  <div>
+                    {service.tests.map((test, testIndex) => (
+                      <div key={testIndex}>
+                        <span>{test.testName}</span> - <span>{test.url}</span>
+                        <button onClick={() => deleteTest(serviceIndex, testIndex)}>Delete</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <span>{service.serviceName}</span>
+                <button onClick={() => toggleExpandService(serviceIndex)}>Expand</button>
+                <button onClick={() => toggleEditService(serviceIndex)}>Edit</button>
+                <button
+                  onClick={() => {
+                    setServices(services.filter((_, i) => i !== serviceIndex));
+                    setExpandedServiceIndex(null);
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default ServicesManager;
