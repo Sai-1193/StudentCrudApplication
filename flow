@@ -1,0 +1,68 @@
+npm install react-flow-renderer
+npm install @types/react-flow-renderer
+
+import React from 'react';
+import ReactFlow, { MiniMap, Controls, ReactFlowProvider } from 'react-flow-renderer';
+
+// Define types for nodes and edges
+type NodeType = {
+  id: string;
+  type: string;
+  data: { label: string };
+  position: { x: number; y: number };
+};
+
+type EdgeType = {
+  id: string;
+  source: string;
+  target: string;
+  animated: boolean;
+};
+
+const flowNodes: NodeType[] = [
+  { id: '1', type: 'default', data: { label: 'apple' }, position: { x: 0, y: 0 } },
+  { id: '2', type: 'default', data: { label: 'ball' }, position: { x: 150, y: 100 } },
+  { id: '3', type: 'default', data: { label: 'cat' }, position: { x: 300, y: 200 } },
+  { id: '4', type: 'default', data: { label: 'dog' }, position: { x: 450, y: 300 } },
+  { id: '5', type: 'default', data: { label: 'elephant' }, position: { x: 600, y: 400 } },
+];
+
+const flowEdges: EdgeType[] = [
+  { id: 'e1', source: '1', target: '2', animated: true },
+  { id: 'e2', source: '2', target: '3', animated: true },
+  { id: 'e3', source: '3', target: '4', animated: true },
+  { id: 'e4', source: '4', target: '5', animated: true },
+];
+
+const FlowMap: React.FC = () => {
+  return (
+    <ReactFlowProvider>
+      <ReactFlow elements={[...flowNodes, ...flowEdges]} style={{ width: '100%', height: '600px' }}>
+        <MiniMap />
+        <Controls />
+      </ReactFlow>
+    </ReactFlowProvider>
+  );
+};
+
+export default FlowMap;
+
+const nodeStyles = {
+  background: '#1a192b',
+  color: '#fff',
+  borderRadius: '5px',
+  padding: '10px',
+  fontSize: '16px',
+};
+
+const edgeStyles = {
+  stroke: '#ff0072',
+  strokeWidth: 2,
+};
+
+<ReactFlow
+  elements={[...flowNodes, ...flowEdges]}
+  nodeStyle={nodeStyles}
+  edgeStyle={edgeStyles}
+  style={{ width: '100%', height: '600px' }}
+>
