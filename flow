@@ -183,3 +183,104 @@ export default FlowMap;
 
 
 
+
+import React, { useState } from 'react';
+import { useDrag, useDrop } from 'react-dnd';
+
+// Define Types for Node and Edge
+interface Position {
+  x: number;
+  y: number;
+}
+
+interface NodeData {
+  id: string;
+  label: string;
+  position: Position;
+}
+
+interface EdgeData {
+  source: string;
+  target: string;
+}
+
+const nodes: NodeData[] = [
+  { id: '1', label: 'Cbis', position: { x: 50, y: 50 } },
+  { id: '2', label: 'Ecm', position: { x: 200, y: 100 } },
+  { id: '3', label: 'Ewp', position: { x: 350, y: 200 } },
+  { id: '4', label: 'Apigee', position: { x: 500, y: 300 } },
+  { id: '5', label: 'Logon', position: { x: 650, y: 400 } },
+];
+
+const edges: EdgeData[] = [
+  { source: '1', target: '2' },
+  { source: '2', target: '3' },
+  { source: '3', target: '4' },
+  { source: '4', target: '5' },
+];
+
+// Node component with drag functionality
+const DraggableNode: React.FC<NodeData> = ({ id, label, position, moveNode }) => {
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: 'node',
+    item: { id, position },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  }));
+
+  return (
+    <g ref={drag} transform={`translate(${position.x},${position.y})`}>
+      <circle r="20" fill="#00aaff" />
+      <text x="0" y="30" textAnchor="middle" fontSize="14" fill="#fff">
+        {label}
+      </text>
+    </g>
+  );
+};
+
+// Edge component for arrows
+const Edge: React.FC<{ source: Position; target: Position }> = ({ source, target }) => {
+  const pathData = `M ${source.x} ${source.y} L ${target.x} ${target.y}`;
+  return (
+    <g>
+      <path d={pathData} stroke="#ff6347" strokeWidth="2" fill="none" />
+      <polygon points={`${target.x},${target.y} ${target.x - 10},${target.y - 5} ${target.x - 10},${target.y + 5}`} fill="#ff6347" />
+    </g>
+  );
+};
+
+// FlowMap component with all nodes and edges
+export const FlowMap: React.FC = () => {
+  const [nodesState, setNodesState] = useState<NodeData[]>(nodes);
+
+  // Function to update node position after drag
+  const moveNode = (id: string, newPosition: Position) => {
+    setNodesState((prevNodes) =>
+      prevNodes.map((node) => (node.id === id ? { ...node, position: newPosition } : node))
+    );
+  };
+
+  return (
+    <svg width="800" height="500" style={{ border: '1px solid #ccc' }}>
+      {/* Render edges */}
+      {edges.map((edge, index) => {
+        const sourceNode = nodesState.find((node) => node.id === edge.source);
+        const targetNode = nodesState.find((node) => node.id === edge.target);
+        if (sourceNode && targetNode) {
+          return <Edge key={index} source={sourceNode.position} target={targetNode.position} />;
+        }
+        return null;
+      })}
+
+      {/* Render draggable nodes */}
+      {nodesState.map((node) => (
+        <DraggableNode key={node.id} {...node} moveNode={moveNode} />
+      ))}
+    </svg>
+  );
+};
+
+
+
+
