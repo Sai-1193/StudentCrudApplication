@@ -101,6 +101,85 @@ export default FlowMap;
 
 
 
+import React from 'react';
+
+// Type for node position
+interface Position {
+  x: number;
+  y: number;
+}
+
+// Type for node data
+interface NodeData {
+  id: string;
+  label: string;
+  position: Position;
+}
+
+interface EdgeData {
+  source: string;
+  target: string;
+}
+
+const nodes: NodeData[] = [
+  { id: '1', label: 'Cbis', position: { x: 50, y: 50 } },
+  { id: '2', label: 'Ecm', position: { x: 200, y: 100 } },
+  { id: '3', label: 'Ewp', position: { x: 350, y: 200 } },
+  { id: '4', label: 'Apigee', position: { x: 500, y: 300 } },
+  { id: '5', label: 'Logon', position: { x: 650, y: 400 } },
+];
+
+const edges: EdgeData[] = [
+  { source: '1', target: '2' },
+  { source: '2', target: '3' },
+  { source: '3', target: '4' },
+  { source: '4', target: '5' },
+];
+
+// Node component for rendering the application nodes
+const Node: React.FC<NodeData> = ({ label, position }) => (
+  <g transform={`translate(${position.x},${position.y})`}>
+    <circle r="20" fill="#00aaff" />
+    <text x="0" y="30" textAnchor="middle" fontSize="14" fill="#fff">
+      {label}
+    </text>
+  </g>
+);
+
+// Edge component for rendering the arrows between nodes
+const Edge: React.FC<{ source: Position; target: Position }> = ({ source, target }) => {
+  const pathData = `M ${source.x} ${source.y} L ${target.x} ${target.y}`;
+  return (
+    <g>
+      <path d={pathData} stroke="#ff6347" strokeWidth="2" fill="none" />
+      <polygon points={`${target.x},${target.y} ${target.x - 10},${target.y - 5} ${target.x - 10},${target.y + 5}`} fill="#ff6347" />
+    </g>
+  );
+};
+
+// Flow map component to render nodes and edges
+const FlowMap: React.FC = () => {
+  return (
+    <svg width="800" height="500" style={{ border: '1px solid #ccc' }}>
+      {/* Render edges */}
+      {edges.map((edge, index) => {
+        const sourceNode = nodes.find((node) => node.id === edge.source);
+        const targetNode = nodes.find((node) => node.id === edge.target);
+        if (sourceNode && targetNode) {
+          return <Edge key={index} source={sourceNode.position} target={targetNode.position} />;
+        }
+        return null;
+      })}
+
+      {/* Render nodes */}
+      {nodes.map((node) => (
+        <Node key={node.id} {...node} />
+      ))}
+    </svg>
+  );
+};
+
+export default FlowMap;
 
 
 
